@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y \
         gd \
     && rm -rf /var/lib/apt/lists/*
 
-# RUN a2enmod rewrite
+RUN a2enmod rewrite
 
 COPY . /var/www/html
 
