@@ -1,0 +1,91 @@
+{
+  "id": "./",
+  "name": "The Leisure Hub",
+  "short_name": "Leisure Hub",
+  "description": "The Leisure Hub — Designed For Premium Experience.",
+  "start_url": "./index.php?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#06172e",
+  "theme_color": "#06172e",
+  "orientation": "portrait-primary",
+  "categories": [
+    "sports",
+    "business",
+    "lifestyle"
+  ],
+  "icons": [
+    {
+      "src": "./assets/img/pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/img/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/img/pwa-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Reserve at The Leisure Hub",
+      "short_name": "Reserve",
+      "description": "Start a new reservation request.",
+      "url": "./reserve.php?source=pwa-shortcut",
+      "icons": [
+        {
+          "src": "./assets/img/pwa-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Reservation Calendar",
+      "short_name": "Calendar",
+      "description": "Check the current reservation calendar.",
+      "url": "./availability.php?source=pwa-shortcut",
+      "icons": [
+        {
+          "src": "./assets/img/pwa-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Track Reservation",
+      "short_name": "Track",
+      "description": "Track an existing reservation request.",
+      "url": "./track.php?source=pwa-shortcut",
+      "icons": [
+        {
+          "src": "./assets/img/pwa-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Admin Portal",
+      "short_name": "Admin",
+      "description": "Open The Leisure Hub administration portal.",
+      "url": "./admin/login.php?source=pwa-shortcut",
+      "icons": [
+        {
+          "src": "./assets/img/pwa-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}

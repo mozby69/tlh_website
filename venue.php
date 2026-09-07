@@ -1,0 +1,11 @@
+<?php
+/**
+ * FILE PURPOSE: Public venue information page.
+ * DEBUGGING: Presentation page; shared reservation CTAs and navigation come from common includes.
+ */
+ $pageTitle='Our Venue'; include __DIR__ . '/includes/header.php'; ?>
+<section class="page-hero"><div class="container"><span class="eyebrow">Our Venue</span><h1>A venue designed to adapt</h1><p><?= e(setting('about_text')) ?></p></div></section>
+<section class="section"><div class="container split"><div><span class="eyebrow">Multipurpose Facility</span><h2>One space for sports and special occasions</h2><p class="muted">The Leisure Hub can transition from an active sports court into an organized event venue. Every reservation is coordinated through one schedule to give each client exclusive use during the confirmed period.</p><div class="check-list"><div class="check-item"><b>✓</b><span>Full multipurpose court access</span></div><div class="check-item"><b>✓</b><span>Flexible setup for private and corporate events</span></div><div class="check-item"><b>✓</b><span>Setup and cleanup periods included in schedule blocking</span></div><div class="check-item"><b>✓</b><span>Professional reservation approval and payment tracking</span></div></div></div><div class="visual-panel"></div></div></section>
+<section class="section surface"><div class="container center"><span class="eyebrow">Venue Information</span><h2>Plan your visit</h2></div><div class="container grid-3" style="margin-top:32px"><div class="card"><div class="icon-box">📍</div><h3>Location</h3><p class="muted"><?= e(setting('address')) ?></p></div><div class="card"><div class="icon-box">🕒</div><h3>Operating Hours</h3><p class="muted"><?= e(setting('operating_hours')) ?></p></div><div class="card"><div class="icon-box">☎</div><h3>Reservations & Inquiries</h3><p class="muted"><?= e(setting('phone')) ?><br><?= e(setting('email')) ?></p></div></div></section>
+<section class="section-sm"><div class="container cta-band"><div><h2>See when the venue is available</h2><p>Review secured and staff-held time blocks before choosing your schedule.</p></div><a class="btn btn-primary" href="availability.php">Open Availability</a></div></section>
+<?php include __DIR__ . '/includes/footer.php'; ?>

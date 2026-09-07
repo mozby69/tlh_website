@@ -1,0 +1,12 @@
+<?php
+/**
+ * FILE PURPOSE: Admin list and status-management screen for contact inquiries.
+ * DEBUGGING: Check inquiry status values and CSRF validation when updates fail.
+ */
+require_once __DIR__ . '/../includes/functions.php';admin_required();$adminPageTitle='Inquiries';
+if($_SERVER['REQUEST_METHOD']==='POST'){verify_csrf();$id=(int)($_POST['id']??0);$status=$_POST['status']??'read';if(in_array($status,['new','read','resolved'],true)){try{$stmt=db()->prepare('UPDATE inquiries SET status=? WHERE id=?');$stmt->execute([$status,$id]);flash('success','Inquiry status updated.');}catch(Throwable $e){flash('danger','Unable to update inquiry.');}}redirect('inquiries.php');}
+try{$items=db()->query('SELECT * FROM inquiries ORDER BY created_at DESC LIMIT 300')->fetchAll();}catch(Throwable $e){$items=[];}
+include __DIR__ . '/_header.php';
+?>
+<section class="panel"><div class="panel-head"><h2>Website Inquiries</h2></div><div class="table-wrap"><table class="admin-table mobile-card-table"><thead><tr><th>Received</th><th>Contact</th><th>Subject & Message</th><th>Status</th><th></th></tr></thead><tbody><?php foreach($items as $item): ?><tr><td data-label="Received"><?= date('M j, Y g:i A',strtotime($item['created_at'])) ?></td><td data-label="Contact" data-priority="primary"><strong><?= e($item['name']) ?></strong><br><a href="mailto:<?= e($item['email']) ?>"><?= e($item['email']) ?></a><br><span class="small muted"><?= e($item['phone']) ?></span></td><td data-label="Message"><strong><?= e($item['subject']) ?></strong><p class="small muted" style="max-width:550px"><?= nl2br(e($item['message'])) ?></p></td><td data-label="Status"><span class="status-pill status-<?= $item['status']==='resolved'?'success':($item['status']==='new'?'warning':'secondary') ?>"><?= e($item['status']) ?></span></td><td data-label="Update"><form method="post"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="id" value="<?= (int)$item['id'] ?>"><select name="status" onchange="this.form.submit()"><option value="new" <?= $item['status']==='new'?'selected':'' ?>>New</option><option value="read" <?= $item['status']==='read'?'selected':'' ?>>Read</option><option value="resolved" <?= $item['status']==='resolved'?'selected':'' ?>>Resolved</option></select></form></td></tr><?php endforeach; ?><?php if(!$items): ?><tr><td colspan="5" class="empty-state">No inquiries received.</td></tr><?php endif; ?></tbody></table></div></section>
+<?php include __DIR__ . '/_footer.php'; ?>

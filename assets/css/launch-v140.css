@@ -1,0 +1,16 @@
+/* v1.2.40 - Critical desktop/tablet splash cache-bypass layer.
+ * This file intentionally has a new pathname so browsers still controlled by
+ * an older cache-first service worker must fetch it from the network. The
+ * higher-specificity display rule overrides v1.2.38's cached desktop hide rule.
+ */
+html .tlh-launch-screen {
+  display: grid !important;
+}
+
+@media (min-width: 951px) {
+  html .tlh-launch-halo { width: min(42vw, 440px); }
+  html .tlh-launch-lockup { width: min(38vw, 380px); }
+  html .tlh-launch-logo-wrap { width: min(30vw, 300px); }
+  html .tlh-launch-tagline { font-size: .78rem; }
+  html .tlh-launch-management { max-width: 320px; font-size: .66rem; }
+}

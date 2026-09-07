@@ -1,0 +1,113 @@
+/*
+ * THE LEISURE HUB - DESIGN TOKENS (v1.2.0)
+ * Single source of truth for shared visual primitives used by the public site
+ * and admin portal. Keep component-specific rules in style.css/admin.css or the
+ * modern override files; update recurring design values here.
+ */
+:root {
+  /* Brand */
+  --brand-navy: #071a33;
+  --brand-navy-raised: #0d2b50;
+  --brand-navy-soft: #163d63;
+  --brand-green: #2CFF05;
+  --brand-green-strong: #20C900;
+  --brand-green-soft: #ECFFE8;
+
+  /* Content */
+  --text-strong: #102035;
+  --text-body: #24364a;
+  --text-muted: #687789;
+  --text-on-dark: #f7fbff;
+
+  /* Surfaces */
+  --surface-base: #ffffff;
+  --surface-subtle: #f5f7fa;
+  --surface-muted: #eef3f7;
+  --surface-raised: #ffffff;
+  --surface-dark: #06172e;
+  --surface-dark-raised: #0b2544;
+  --border-subtle: #e2e8ef;
+  --border-strong: #cbd6e1;
+
+  /* Semantic */
+  --state-success: #16845b;
+  --state-success-soft: #e7f7ef;
+  --state-warning: #d78b00;
+  --state-warning-soft: #fff6dc;
+  --state-danger: #c93648;
+  --state-danger-soft: #fff0f2;
+  --state-info: #2c6da4;
+  --state-info-soft: #eaf4ff;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-22: 88px;
+
+  /* Radius */
+  --radius-xs: 7px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-2xl: 30px;
+  --radius-pill: 999px;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(6, 23, 46, .05);
+  --shadow-sm: 0 5px 16px rgba(6, 23, 46, .07);
+  --shadow-card: 0 10px 28px rgba(6, 23, 46, .08);
+  --shadow-raised: 0 18px 46px rgba(6, 23, 46, .12);
+  --shadow-floating: 0 24px 64px rgba(3, 15, 31, .22);
+
+  /* Typography */
+  --font-size-xs: .75rem;
+  --font-size-sm: .875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.375rem;
+  --font-size-2xl: 1.75rem;
+  --font-size-3xl: clamp(2rem, 4vw, 3.4rem);
+  --font-size-display: clamp(2.5rem, 6vw, 5.4rem);
+
+  /* Controls */
+  --control-height-sm: 38px;
+  --control-height: 46px;
+  --control-height-lg: 52px;
+  --touch-target: 44px;
+  --header-height: 76px;
+  --mobile-header-height: 68px;
+  --mobile-bottom-nav-height: 72px;
+
+  /* Motion */
+  --motion-fast: 140ms;
+  --motion-standard: 220ms;
+  --motion-slow: 320ms;
+  --ease-standard: cubic-bezier(.2, .8, .2, 1);
+
+  /* Compatibility aliases used by the existing application. */
+  --navy: var(--brand-navy);
+  --navy-2: var(--brand-navy-raised);
+  --green: var(--brand-green);
+  --green-dark: var(--brand-green-strong);
+  --white: var(--surface-base);
+  --ink: var(--text-strong);
+  --muted: var(--text-muted);
+  --surface: var(--surface-subtle);
+  --line: var(--border-subtle);
+  --danger: var(--state-danger);
+  --warning: var(--state-warning);
+  --success: var(--state-success);
+  --shadow: var(--shadow-raised);
+  --radius: var(--radius-lg);
+}

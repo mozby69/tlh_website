@@ -1,0 +1,10 @@
+vendor/
+*.zip
+*.pdf
+*.rar
+*.7z
+*.mp4
+docker-compose.yml
+.env
+.env.*
+leisure_hub.sql

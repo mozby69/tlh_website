@@ -1,0 +1,2684 @@
+/* THE LEISURE HUB - MODERN ADMIN EXPERIENCE (v1.2.2) */
+.admin-body { background: var(--surface-muted); color: var(--text-body); }
+.admin-sidebar { background: var(--surface-dark); }
+.admin-nav a { min-height: var(--touch-target); border-radius: var(--radius-md); }
+.admin-nav a:hover,
+.admin-nav a.active { background: rgba(44, 255, 5, .12); }
+.admin-topbar {
+  min-height: 92px;
+  border-bottom: 0;
+  background: rgba(255, 255, 255, .95);
+  box-shadow: 0 1px 0 rgba(7, 26, 51, .07), 0 8px 26px rgba(7, 26, 51, .04);
+  backdrop-filter: blur(16px);
+}
+.admin-content { padding: var(--space-8); }
+.panel,
+.metric-card,
+.detail-item,
+.admin-media-card {
+  border-color: rgba(203, 214, 225, .68);
+  box-shadow: var(--shadow-xs);
+}
+.panel { border-radius: var(--radius-lg); }
+.metric-card { border-radius: var(--radius-lg); }
+.panel-head { margin-bottom: var(--space-5); }
+.admin-table { border-collapse: separate; border-spacing: 0; }
+.admin-table th { background: var(--surface-subtle); }
+.admin-table th,
+.admin-table td { border-bottom-color: var(--border-subtle); }
+.admin-table tbody tr:last-child td { border-bottom: 0; }
+.admin-table tr:hover td { background: #fcfdfe; }
+.toolbar {
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-subtle);
+}
+.toolbar input,
+.toolbar select { min-height: var(--control-height); }
+.admin-content .btn { min-height: var(--control-height); border-radius: var(--radius-md); }
+.admin-content .btn-sm { min-height: var(--control-height-sm); }
+.empty-state { background: var(--surface-subtle); border-radius: var(--radius-lg); }
+
+/* Purpose-built reservation cards on narrow screens instead of horizontal scroll. */
+@media (max-width: 720px) {
+  .admin-content { padding: var(--space-4); }
+  .reservation-list-table-wrap,
+  .batch-groups-table-wrap { overflow: visible; }
+  .reservation-list-table,
+  .batch-groups-table { min-width: 0 !important; border-collapse: separate; border-spacing: 0 var(--space-3); }
+  .reservation-list-table thead,
+  .batch-groups-table thead { display: none; }
+  .reservation-list-table tbody,
+  .batch-groups-table tbody { display: grid; gap: var(--space-3); }
+  .reservation-list-table tr,
+  .batch-groups-table tr {
+    display: grid;
+    gap: 0;
+    padding: var(--space-4);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    background: var(--surface-raised);
+    box-shadow: var(--shadow-sm);
+  }
+  .reservation-list-table td,
+  .batch-groups-table td {
+    display: grid;
+    grid-template-columns: minmax(92px, .42fr) minmax(0, 1fr);
+    gap: var(--space-3);
+    align-items: start;
+    min-width: 0 !important;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-subtle);
+    background: transparent !important;
+    overflow-wrap: anywhere;
+  }
+  .reservation-list-table td::before,
+  .batch-groups-table td::before {
+    content: attr(data-label);
+    color: var(--text-muted);
+    font-size: .68rem;
+    font-weight: 900;
+    letter-spacing: .055em;
+    line-height: 1.35;
+    text-transform: uppercase;
+  }
+  .reservation-list-table td[data-priority="primary"],
+  .batch-groups-table td[data-priority="primary"] {
+    grid-template-columns: 1fr;
+    padding-top: 0;
+  }
+  .reservation-list-table td[data-priority="primary"]::before,
+  .batch-groups-table td[data-priority="primary"]::before { display: none; }
+  .reservation-list-table td[data-label="Actions"],
+  .batch-groups-table td[data-label="Actions"] {
+    grid-template-columns: 1fr;
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+  .reservation-list-table td[data-label="Actions"]::before,
+  .batch-groups-table td[data-label="Actions"]::before { margin-bottom: 2px; }
+  .reservation-row-actions,
+  .batch-group-actions { min-width: 0; max-width: none; width: 100%; }
+  .reservation-row-actions > .btn,
+  .reservation-row-more,
+  .batch-group-actions > .btn { flex: 1 1 120px; }
+  .reservation-list-table td[colspan],
+  .batch-groups-table td[colspan] { display: block; padding: 0; border: 0; }
+  .reservation-list-table td[colspan]::before,
+  .batch-groups-table td[colspan]::before { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell,
+  .admin-sidebar,
+  .admin-nav a { transition-duration: .01ms !important; }
+}
+@media (max-width: 720px) {
+  .reservation-list-table td[data-label="Reference"] { order: 1; }
+  .reservation-list-table td[data-label="Client"] { order: 2; }
+  .reservation-list-table td[data-label="Schedule"] { order: 3; }
+  .reservation-list-table td[data-label="Status"] { order: 4; }
+  .reservation-list-table td[data-label="Payment"] { order: 5; }
+  .reservation-list-table td[data-label="Reservation"] { order: 6; }
+  .reservation-list-table td[data-label="Amount"] { order: 7; }
+  .reservation-list-table td[data-label="Actions"] { order: 8; }
+}
+
+/* Admin route transitions and loading feedback. */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: tlh-admin-page-out 120ms ease both; }
+::view-transition-new(root) { animation: tlh-admin-page-in 200ms cubic-bezier(.2,.8,.2,1) both; }
+@keyframes tlh-admin-page-out { to { opacity: 0; } }
+@keyframes tlh-admin-page-in { from { opacity: 0; transform: translateY(3px); } }
+body.is-navigating::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 5000;
+  width: 42%;
+  height: 3px;
+  background: var(--brand-green);
+  box-shadow: 0 0 14px rgba(44,255,5,.42);
+  animation: tlh-admin-route-progress .8s cubic-bezier(.2,.8,.2,1) infinite alternate;
+}
+@keyframes tlh-admin-route-progress { from { transform: translateX(-35%); } to { transform: translateX(175%); } }
+.admin-notification-list.is-loading { position: relative; }
+.admin-notification-list.is-loading::before {
+  content: "";
+  display: block;
+  height: 42px;
+  margin: 8px 10px;
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(90deg, transparent 0 7%, rgba(255,255,255,.72) 12% 22%, transparent 28% 100%),
+    linear-gradient(90deg, #edf1f5 20%, #f8fafc 42%, #edf1f5 64%);
+  background-size: 100% 100%, 300% 100%;
+  animation: tlh-admin-skeleton 1.15s ease-in-out infinite;
+}
+@keyframes tlh-admin-skeleton { 0% { background-position: 0 0, 100% 0; } 100% { background-position: 0 0, 0 0; } }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root), ::view-transition-new(root), body.is-navigating::before, .admin-notification-list.is-loading::before { animation: none !important; }
+}
+@media (max-width: 720px) {
+  .reservation-list-table,
+  .batch-groups-table { display: block; width: 100%; }
+}
+
+
+/* Mobile admin app navigation (v1.2.3). The complete tool set remains in the sidebar. */
+.admin-bottom-nav { display: none; }
+
+@media (max-width: 900px) {
+  .admin-main { padding-bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px)); }
+  .admin-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1080;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: end;
+    min-height: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+    padding: 7px 6px calc(7px + env(safe-area-inset-bottom, 0px));
+    border: 0;
+    border-top: 1px solid rgba(203, 214, 225, .8);
+    border-radius: 0;
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 -10px 32px rgba(7, 26, 51, .1);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  .admin-bottom-nav-item {
+    position: relative;
+    min-width: 0;
+    min-height: 52px;
+    padding: 6px 2px 4px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: .64rem;
+    font-weight: 800;
+    line-height: 1.05;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .admin-bottom-nav-item svg {
+    width: 21px;
+    height: 21px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .admin-bottom-nav-item:hover,
+  .admin-bottom-nav-item:focus-visible,
+  .admin-bottom-nav-item.active {
+    color: var(--navy);
+    background: rgba(7, 26, 51, .055);
+  }
+  .admin-bottom-nav-item.active::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    width: 18px;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--brand-green);
+  }
+  .admin-bottom-nav-create {
+    transform: translateY(-8px);
+    color: var(--navy);
+    background: transparent !important;
+  }
+  .admin-bottom-nav-create-icon {
+    display: grid;
+    place-items: center;
+    width: 43px;
+    height: 43px;
+    margin-bottom: -1px;
+    border-radius: 50%;
+    background: var(--brand-green);
+    color: var(--navy);
+    box-shadow: 0 9px 22px rgba(88, 139, 0, .24);
+    font-size: 1.8rem;
+    font-weight: 500;
+    line-height: 1;
+  }
+  .admin-bottom-nav-create.active::after { display: none; }
+  .admin-bottom-nav-create.active .admin-bottom-nav-create-icon,
+  .admin-bottom-nav-create:focus-visible .admin-bottom-nav-create-icon {
+    box-shadow: 0 0 0 4px rgba(44, 255, 5, .2), 0 9px 22px rgba(88, 139, 0, .24);
+  }
+  body.admin-menu-open .admin-bottom-nav { pointer-events: none; }
+}
+
+@media (max-width: 430px) {
+  .admin-bottom-nav-item { font-size: .6rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-bottom-nav-create { transform: none; }
+}
+
+/* v1.2.11 - Installed phone Admin Portal chrome cleanup.
+   In standalone phone mode the bottom nav replaces the hamburger/sidebar trigger,
+   so the full top bar is removed and only the notification bell remains. */
+.admin-notification-standalone { display: none; }
+
+@media (max-width: 760px) {
+  html.tlh-standalone-app .admin-topbar { display: none !important; }
+
+  html.tlh-standalone-app .admin-notification-standalone,
+  html.tlh-standalone-app .admin-notification-floating {
+    display: block;
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    right: 14px;
+    z-index: 1100;
+  }
+
+  html.tlh-standalone-app .admin-notification-standalone .admin-notification-bell,
+  html.tlh-standalone-app .admin-notification-floating .admin-notification-bell {
+    width: 46px;
+    height: 46px;
+    border: 1px solid rgba(203, 214, 225, .84);
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 8px 24px rgba(7, 26, 51, .12);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  html.tlh-standalone-app .admin-notification-standalone .admin-notification-popover,
+  html.tlh-standalone-app .admin-notification-floating .admin-notification-popover {
+    top: calc(env(safe-area-inset-top, 0px) + 66px);
+  }
+
+  html.tlh-standalone-app .admin-content:not(.admin-content-calendar-only) {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 72px);
+  }
+
+  /* Defensive: the standalone phone app has no top-bar hamburger.
+     The bottom-nav More button remains the entry point to the full sidebar. */
+  html.tlh-standalone-app .admin-menu-toggle { display: none !important; }
+}
+
+
+/* v1.2.13 - Subtle Admin bottom-navigation motion. */
+@keyframes tlh-admin-bottom-nav-active-settle {
+  0% { transform: translateY(0) scale(.96); }
+  58% { transform: translateY(-2.5px) scale(1.075); }
+  100% { transform: translateY(-2px) scale(1.06); }
+}
+
+@keyframes tlh-admin-create-active-settle {
+  0% { transform: scale(.96); }
+  62% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+@media (max-width: 900px) {
+  .admin-bottom-nav-item {
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      color 180ms var(--ease-standard),
+      background-color 180ms var(--ease-standard),
+      transform 130ms var(--ease-standard);
+  }
+
+  .admin-bottom-nav-item svg {
+    transform-origin: 50% 50%;
+    transition: transform 180ms var(--ease-standard);
+  }
+
+  .admin-bottom-nav-item::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 50%;
+    width: 18px;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--brand-green);
+    opacity: 0;
+    transform: translateX(-50%) scaleX(.35);
+    transform-origin: center;
+    transition: transform 190ms var(--ease-standard), opacity 160ms ease;
+  }
+
+  .admin-bottom-nav-item.active::after {
+    opacity: 1;
+    transform: translateX(-50%) scaleX(1);
+  }
+
+  .admin-bottom-nav-item:not(.admin-bottom-nav-create).active svg {
+    animation: tlh-admin-bottom-nav-active-settle 260ms var(--ease-standard) both;
+  }
+
+  .admin-bottom-nav-item:not(.admin-bottom-nav-create):active {
+    transform: scale(.97);
+  }
+
+  .admin-bottom-nav-create {
+    transition: transform 150ms var(--ease-standard);
+  }
+
+  .admin-bottom-nav-create::after { display: none; }
+
+  .admin-bottom-nav-create-icon {
+    transition: transform 180ms var(--ease-standard), box-shadow 190ms var(--ease-standard);
+  }
+
+  .admin-bottom-nav-create.active .admin-bottom-nav-create-icon {
+    animation: tlh-admin-create-active-settle 280ms var(--ease-standard) both;
+  }
+
+  .admin-bottom-nav-create:active {
+    transform: translateY(-7px) scale(.97);
+  }
+
+  .admin-bottom-nav-create:active .admin-bottom-nav-create-icon {
+    box-shadow: 0 6px 16px rgba(88, 139, 0, .2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-bottom-nav-item,
+  .admin-bottom-nav-item svg,
+  .admin-bottom-nav-item::after,
+  .admin-bottom-nav-create,
+  .admin-bottom-nav-create-icon {
+    animation: none !important;
+    transition: none !important;
+  }
+  .admin-bottom-nav-item:not(.admin-bottom-nav-create).active svg { transform: translateY(-2px) scale(1.06); }
+  .admin-bottom-nav-item:not(.admin-bottom-nav-create):active { transform: none; }
+}
+
+
+/* v1.2.14 - Directional page swipe for Admin bottom-navigation route changes. */
+.admin-bottom-nav { view-transition-name: tlh-bottom-navigation; }
+
+:root[data-tlh-nav-swipe="forward"]::view-transition-old(root) {
+  animation: tlh-admin-route-swipe-out-left 190ms cubic-bezier(.4,0,.2,1) both;
+}
+:root[data-tlh-nav-swipe="forward"]::view-transition-new(root) {
+  animation: tlh-admin-route-swipe-in-right 240ms cubic-bezier(.2,.8,.2,1) both;
+}
+:root[data-tlh-nav-swipe="backward"]::view-transition-old(root) {
+  animation: tlh-admin-route-swipe-out-right 190ms cubic-bezier(.4,0,.2,1) both;
+}
+:root[data-tlh-nav-swipe="backward"]::view-transition-new(root) {
+  animation: tlh-admin-route-swipe-in-left 240ms cubic-bezier(.2,.8,.2,1) both;
+}
+::view-transition-old(tlh-bottom-navigation),
+::view-transition-new(tlh-bottom-navigation) {
+  animation-duration: 160ms;
+  animation-timing-function: ease;
+}
+@keyframes tlh-admin-route-swipe-out-left {
+  to { opacity: .58; transform: translateX(-20px); }
+}
+@keyframes tlh-admin-route-swipe-in-right {
+  from { opacity: .68; transform: translateX(24px); }
+}
+@keyframes tlh-admin-route-swipe-out-right {
+  to { opacity: .58; transform: translateX(20px); }
+}
+@keyframes tlh-admin-route-swipe-in-left {
+  from { opacity: .68; transform: translateX(-24px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-tlh-nav-swipe]::view-transition-old(root),
+  :root[data-tlh-nav-swipe]::view-transition-new(root),
+  ::view-transition-old(tlh-bottom-navigation),
+  ::view-transition-new(tlh-bottom-navigation) { animation: none !important; }
+}
+
+/* v1.2.17 - Installed phone Admin calendar safe-area fix.
+   The calendar owns its month controls because the global top bar is hidden in app mode. */
+@media (max-width: 760px) {
+  html.tlh-standalone-app .admin-content.admin-content-calendar-only {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 72px);
+  }
+
+  /* Once the standalone hamburger is hidden, collapse the old five-column
+     header into Previous / Month / Next so controls remain centered and tappable. */
+  html.tlh-standalone-app .calendar-only-header-with-menu {
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    gap: 10px;
+  }
+
+  html.tlh-standalone-app .calendar-only-header-with-menu .calendar-only-menu-spacer {
+    display: none;
+  }
+}
+
+/* v1.2.36 - Glassmorphism Admin bottom navigation.
+ * Match the public mobile navigation surface and make the center New action
+ * use the same raised green treatment as the public Reserve action.
+ */
+@media (max-width: 900px) {
+  .admin-main {
+    padding-bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 18px);
+  }
+
+  .admin-bottom-nav {
+    left: 10px;
+    right: 10px;
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    min-height: var(--mobile-bottom-nav-height);
+    padding: 7px 6px;
+    border: 1px solid rgba(255, 255, 255, .58);
+    border-radius: 24px;
+    background: rgba(247, 250, 252, .72);
+    box-shadow:
+      0 16px 42px rgba(7, 26, 51, .16),
+      inset 0 1px 0 rgba(255, 255, 255, .72);
+    backdrop-filter: blur(24px) saturate(155%);
+    -webkit-backdrop-filter: blur(24px) saturate(155%);
+  }
+
+  .admin-bottom-nav-item:hover,
+  .admin-bottom-nav-item:focus-visible,
+  .admin-bottom-nav-item.active {
+    color: var(--navy);
+    background: rgba(255, 255, 255, .48);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .26);
+  }
+
+  .admin-bottom-nav-create,
+  .admin-bottom-nav-create:hover,
+  .admin-bottom-nav-create:focus-visible,
+  .admin-bottom-nav-create.active {
+    margin-top: -19px;
+    min-height: 64px;
+    padding: 3px;
+    transform: none;
+    border: 1px solid rgba(255, 255, 255, .36);
+    border-radius: 20px;
+    background: var(--brand-green) !important;
+    color: var(--navy) !important;
+    box-shadow:
+      0 12px 28px rgba(102, 170, 0, .30),
+      inset 0 1px 0 rgba(255, 255, 255, .30);
+  }
+
+  .admin-bottom-nav-create-icon {
+    display: block;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    box-shadow: none !important;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .admin-bottom-nav-create.active .admin-bottom-nav-create-icon,
+  .admin-bottom-nav-create:focus-visible .admin-bottom-nav-create-icon {
+    box-shadow: none !important;
+  }
+
+  .admin-bottom-nav-create:active {
+    transform: translateY(1px) scale(.97);
+    box-shadow:
+      0 8px 19px rgba(102, 170, 0, .24),
+      inset 0 1px 0 rgba(255, 255, 255, .26);
+  }
+
+  .admin-bottom-nav-create:active .admin-bottom-nav-create-icon {
+    box-shadow: none !important;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  @media (max-width: 900px) {
+    .admin-bottom-nav { background: rgba(247, 250, 252, .96); }
+  }
+}
+
+/* v1.2.37 - Deeper Explore-style glassmorphism for Admin bottom navigation.
+ * Mirror the public dark translucent glass while keeping the center Reserve
+ * action identical and solid green above the surface.
+ */
+@media (max-width: 900px) {
+  .admin-bottom-nav {
+    border-color: rgba(255, 255, 255, .42);
+    background:
+      linear-gradient(135deg, rgba(15, 39, 63, .44), rgba(7, 24, 44, .27));
+    box-shadow:
+      0 18px 46px rgba(3, 15, 31, .25),
+      inset 0 1px 0 rgba(255, 255, 255, .36),
+      inset 0 -1px 0 rgba(255, 255, 255, .08);
+    backdrop-filter: blur(16px) saturate(145%);
+    -webkit-backdrop-filter: blur(16px) saturate(145%);
+  }
+
+  .admin-bottom-nav-item:not(.admin-bottom-nav-create) {
+    color: rgba(255, 255, 255, .74);
+  }
+
+  .admin-bottom-nav-item:not(.admin-bottom-nav-create):hover,
+  .admin-bottom-nav-item:not(.admin-bottom-nav-create):focus-visible,
+  .admin-bottom-nav-item:not(.admin-bottom-nav-create).active {
+    color: #fff;
+    background: rgba(255, 255, 255, .115);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, .12),
+      inset 0 1px 0 rgba(255, 255, 255, .09);
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  @media (max-width: 900px) {
+    .admin-bottom-nav { background: rgba(7, 24, 44, .94); }
+  }
+}
+
+/* v1.2.51 - Payment & Collection Dashboard */
+.collections-hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 18px;
+  padding: clamp(24px, 4vw, 38px);
+  border: 1px solid rgba(8, 38, 67, .08);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 88% 18%, rgba(105, 176, 15, .16), transparent 30%),
+    linear-gradient(135deg, rgba(250, 252, 253, .98), rgba(241, 246, 248, .94));
+  box-shadow: 0 22px 54px rgba(8, 28, 47, .08);
+}
+
+.collections-hero::after {
+  content: "₱";
+  position: absolute;
+  right: 3.5%;
+  top: -44px;
+  font-size: clamp(8rem, 16vw, 13rem);
+  font-weight: 800;
+  line-height: 1;
+  color: rgba(7, 41, 67, .035);
+  pointer-events: none;
+}
+
+.collections-hero-copy,
+.collections-hero-actions {
+  position: relative;
+  z-index: 1;
+}
+
+.collections-hero-copy {
+  max-width: 720px;
+}
+
+.collections-hero-copy h2 {
+  margin: 5px 0 8px;
+  font-size: clamp(1.8rem, 3vw, 2.65rem);
+  letter-spacing: -.035em;
+}
+
+.collections-hero-copy p {
+  max-width: 680px;
+  margin: 0;
+  color: rgba(17, 38, 55, .72);
+  line-height: 1.65;
+}
+
+.collections-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.collections-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.collection-metric-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 148px;
+  padding: 20px;
+  border: 1px solid rgba(8, 38, 67, .08);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 16px 38px rgba(7, 25, 43, .065);
+}
+
+.collection-metric-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -32px -48px auto;
+  width: 118px;
+  height: 118px;
+  border-radius: 999px;
+  background: rgba(8, 39, 65, .035);
+}
+
+.collection-metric-card > span,
+.collection-metric-card > small {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+.collection-metric-card > span {
+  margin-bottom: 12px;
+  color: rgba(13, 40, 61, .62);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.collection-metric-card > strong {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-bottom: 8px;
+  font-size: clamp(1.6rem, 2.5vw, 2.15rem);
+  letter-spacing: -.045em;
+  color: #0b2b45;
+}
+
+.collection-metric-card > small {
+  color: rgba(20, 44, 63, .62);
+  line-height: 1.4;
+}
+
+.collection-metric-card.is-primary {
+  border-color: rgba(105, 176, 15, .2);
+  background: linear-gradient(150deg, rgba(248, 252, 243, .98), rgba(255, 255, 255, .94));
+}
+
+.collection-metric-card.is-primary > strong,
+.collection-metric-card.is-collected > strong {
+  color: #009c00;
+}
+
+.collection-metric-card.is-past {
+  border-color: rgba(182, 92, 52, .16);
+  background: linear-gradient(150deg, rgba(255, 249, 246, .98), rgba(255, 255, 255, .94));
+}
+
+.collection-metric-card.is-past > strong {
+  color: #8a4528;
+}
+
+.collections-resolution-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 0 18px;
+  padding: 15px 18px;
+  border: 1px solid rgba(201, 145, 29, .2);
+  border-radius: 18px;
+  background: rgba(255, 248, 226, .72);
+}
+
+.collections-resolution-note div {
+  display: grid;
+  gap: 3px;
+}
+
+.collections-resolution-note strong {
+  color: #624612;
+}
+
+.collections-resolution-note span {
+  color: rgba(75, 58, 24, .72);
+  font-size: .88rem;
+}
+
+.collections-panel,
+.collections-recent-panel {
+  overflow: visible;
+}
+
+.collections-panel-head {
+  gap: 20px;
+}
+
+.collections-panel-head p {
+  max-width: 760px;
+}
+
+.collections-state-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.collections-state-chips span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 11px;
+  border: 1px solid rgba(9, 39, 64, .08);
+  border-radius: 999px;
+  background: rgba(246, 249, 250, .88);
+  color: rgba(15, 41, 61, .7);
+  font-size: .77rem;
+  font-weight: 700;
+}
+
+.collections-state-chips strong {
+  color: #0c304c;
+  font-size: .95rem;
+}
+
+.collections-filters {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.6fr) repeat(3, minmax(150px, .7fr)) auto;
+  gap: 12px;
+  align-items: end;
+  margin: 4px 0 18px;
+  padding: 14px;
+  border: 1px solid rgba(9, 38, 62, .07);
+  border-radius: 18px;
+  background: rgba(247, 250, 251, .72);
+}
+
+.collections-filters > div {
+  min-width: 0;
+}
+
+.collections-filters label {
+  display: block;
+  margin: 0 0 6px;
+  color: rgba(15, 42, 62, .62);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.collections-filters input,
+.collections-filters select {
+  width: 100%;
+  min-height: 44px;
+}
+
+.collections-filter-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.collections-list {
+  display: grid;
+  gap: 10px;
+}
+
+.collection-row {
+  display: grid;
+  grid-template-columns: minmax(120px, .7fr) minmax(250px, 1.6fr) minmax(270px, 1.35fr) minmax(120px, .65fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid rgba(10, 39, 63, .075);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, .94);
+  box-shadow: 0 8px 24px rgba(9, 29, 47, .035);
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.collection-row:hover {
+  transform: translateY(-1px);
+  border-color: rgba(105, 176, 15, .22);
+  box-shadow: 0 13px 28px rgba(9, 29, 47, .065);
+}
+
+.collection-row.is-past-event {
+  border-left: 4px solid rgba(165, 82, 45, .64);
+}
+
+.collection-row-status {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
+.collection-aging {
+  color: rgba(24, 48, 66, .58);
+  font-size: .76rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.collection-aging.is-past {
+  color: #8b4d31;
+}
+
+.collection-row-main {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.collection-row-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+}
+
+.collection-row-title strong {
+  color: #0c2f49;
+  font-size: 1rem;
+}
+
+.collection-row-title a {
+  color: #568f0a;
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.collection-row-main > span,
+.collection-row-main > small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collection-row-main > span {
+  color: rgba(18, 43, 62, .69);
+  font-size: .82rem;
+}
+
+.collection-row-main > small {
+  color: rgba(23, 47, 65, .52);
+  font-size: .74rem;
+}
+
+.collection-batch-line {
+  color: #476a84 !important;
+  font-weight: 700;
+}
+
+.collection-row-finance {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(70px, 1fr));
+  gap: 8px;
+}
+
+.collection-row-finance span {
+  min-width: 0;
+  padding: 9px 10px;
+  border-radius: 13px;
+  background: rgba(244, 247, 249, .82);
+}
+
+.collection-row-finance small,
+.collection-row-last-payment small {
+  display: block;
+  margin-bottom: 2px;
+  color: rgba(21, 46, 64, .52);
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+.collection-row-finance strong,
+.collection-row-last-payment strong {
+  display: block;
+  overflow: hidden;
+  color: #12344e;
+  font-size: .88rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collection-row-finance .is-balance {
+  background: rgba(105, 176, 15, .1);
+}
+
+.collection-row-finance .is-balance strong {
+  color: #4f8507;
+  font-size: 1rem;
+}
+
+.collection-row-last-payment {
+  min-width: 0;
+}
+
+.collection-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.collections-pagination-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+  color: rgba(19, 45, 64, .62);
+  font-size: .82rem;
+}
+
+.collections-page-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  color: rgba(18, 43, 61, .6);
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.collections-empty-state {
+  min-height: 180px;
+}
+
+.collections-recent-panel {
+  margin-top: 18px;
+}
+
+.collections-recent-list {
+  display: grid;
+}
+
+.collection-recent-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(180px, 1fr) minmax(180px, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 13px 4px;
+  border-bottom: 1px solid rgba(10, 39, 63, .07);
+  color: inherit;
+  text-decoration: none;
+}
+
+.collection-recent-row:last-child {
+  border-bottom: 0;
+}
+
+.collection-recent-row:hover {
+  background: rgba(247, 250, 251, .65);
+}
+
+.collection-recent-row span {
+  min-width: 0;
+}
+
+.collection-recent-row strong,
+.collection-recent-row small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collection-recent-row strong {
+  color: #153750;
+  font-size: .84rem;
+}
+
+.collection-recent-row small {
+  margin-top: 2px;
+  color: rgba(21, 48, 67, .54);
+  font-size: .73rem;
+}
+
+.collection-recent-amount {
+  color: #4f8507 !important;
+  font-size: 1rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+@media (max-width: 1280px) {
+  .collections-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .collections-filters {
+    grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(140px, .8fr));
+  }
+
+  .collections-filter-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
+  .collection-row {
+    grid-template-columns: minmax(110px, .6fr) minmax(220px, 1.35fr) minmax(250px, 1.2fr) auto;
+  }
+
+  .collection-row-last-payment {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .collections-hero {
+    align-items: flex-start;
+    flex-direction: column;
+    border-radius: 22px;
+    padding: 22px 18px;
+  }
+
+  .collections-hero-actions {
+    justify-content: flex-start;
+  }
+
+  .collections-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .collection-metric-card {
+    min-height: 132px;
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .collections-resolution-note {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .collections-panel-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .collections-state-chips {
+    justify-content: flex-start;
+  }
+
+  .collections-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .collections-search-field,
+  .collections-filter-actions {
+    grid-column: 1 / -1;
+  }
+
+  .collection-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 15px;
+  }
+
+  .collection-row-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .collection-row-main > span,
+  .collection-row-main > small {
+    white-space: normal;
+  }
+
+  .collection-row-finance {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .collection-row-actions {
+    justify-content: stretch;
+  }
+
+  .collection-row-actions .btn {
+    flex: 1 1 140px;
+  }
+
+  .collections-pagination-wrap {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .collection-recent-row {
+    grid-template-columns: 1fr auto;
+    gap: 7px 12px;
+    padding: 13px 2px;
+  }
+
+  .collection-recent-row span:nth-child(2),
+  .collection-recent-row span:nth-child(3) {
+    grid-column: 1;
+  }
+
+  .collection-recent-amount {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    align-self: center;
+  }
+}
+
+@media (max-width: 560px) {
+  .collections-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .collection-metric-card {
+    min-height: 0;
+  }
+
+  .collections-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .collections-search-field,
+  .collections-filter-actions {
+    grid-column: auto;
+  }
+
+  .collections-filter-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .collection-row-finance {
+    gap: 6px;
+  }
+
+  .collection-row-finance span {
+    padding: 8px;
+  }
+
+  .collection-row-finance strong {
+    font-size: .8rem;
+  }
+
+  .collection-row-finance .is-balance strong {
+    font-size: .88rem;
+  }
+}
+
+/* ========================================================================== 
+   v1.2.52 - Reports Center
+   Unified reporting workspace for Admin, Accounting, and Management.
+   ========================================================================== */
+.reports-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 18px;
+  padding: clamp(22px, 3vw, 34px);
+  border: 1px solid rgba(15, 38, 67, .09);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 88% 12%, rgba(45, 166, 108, .12), transparent 30%),
+    linear-gradient(145deg, rgba(255,255,255,.98), rgba(246,249,252,.95));
+  box-shadow: 0 18px 50px rgba(7, 25, 47, .08);
+}
+
+.reports-hero h2 {
+  margin: 6px 0 8px;
+  font-size: clamp(1.75rem, 3vw, 2.55rem);
+  line-height: 1.05;
+  letter-spacing: -.035em;
+  color: #071c35;
+}
+
+.reports-hero p {
+  max-width: 760px;
+  margin: 0;
+  color: #607086;
+  line-height: 1.65;
+}
+
+.reports-hero-actions,
+.reports-export-actions,
+.reports-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.reports-selector {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 9px;
+  margin-bottom: 18px;
+}
+
+.report-selector-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 78px;
+  padding: 13px 14px;
+  border: 1px solid rgba(15, 38, 67, .10);
+  border-radius: 18px;
+  background: rgba(255,255,255,.88);
+  color: #20354e;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(7,25,47,.045);
+  transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+
+.report-selector-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(45, 166, 108, .34);
+  box-shadow: 0 12px 28px rgba(7,25,47,.075);
+}
+
+.report-selector-card span {
+  font-weight: 760;
+  font-size: .88rem;
+  line-height: 1.25;
+}
+
+.report-selector-card small {
+  margin-top: 5px;
+  color: #7a899a;
+  font-size: .72rem;
+}
+
+.report-selector-card.active {
+  border-color: rgba(45,166,108,.46);
+  background: linear-gradient(145deg, rgba(236,250,244,.98), rgba(255,255,255,.98));
+  color: #0d5b3a;
+  box-shadow: 0 12px 30px rgba(27,133,84,.10), inset 0 0 0 1px rgba(45,166,108,.08);
+}
+
+.reports-filter-panel {
+  margin-bottom: 18px;
+  padding: clamp(18px, 2.5vw, 26px);
+}
+
+.reports-filter-head,
+.reports-table-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.reports-filter-head h3,
+.reports-table-head h3 {
+  margin: 4px 0 5px;
+  color: #102844;
+  font-size: 1.18rem;
+}
+
+.reports-filter-head p,
+.reports-table-head p {
+  margin: 0;
+  max-width: 760px;
+  color: #738196;
+  line-height: 1.55;
+}
+
+.reports-filter-meta {
+  flex: 0 0 auto;
+  min-width: 138px;
+  padding: 11px 13px;
+  border: 1px solid rgba(15,38,67,.08);
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.reports-filter-meta span,
+.reports-filter-meta strong {
+  display: block;
+}
+
+.reports-filter-meta span {
+  color: #8a96a6;
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.reports-filter-meta strong {
+  margin-top: 3px;
+  color: #18324f;
+  font-size: .83rem;
+}
+
+.reports-presets {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin: 18px 0 14px;
+}
+
+.report-preset-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 7px 12px;
+  border: 1px solid rgba(15,38,67,.10);
+  border-radius: 999px;
+  background: #fff;
+  color: #42546a;
+  font-size: .78rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.report-preset-chip:hover,
+.report-preset-chip.active {
+  border-color: rgba(45,166,108,.36);
+  background: #effaf5;
+  color: #116743;
+}
+
+.reports-filters {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.reports-filters .form-group {
+  margin: 0;
+}
+
+.reports-search-field {
+  grid-column: span 2;
+}
+
+.reports-filter-actions {
+  justify-content: flex-end;
+  align-self: end;
+}
+
+.reports-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.report-summary-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 126px;
+  padding: 18px;
+  border: 1px solid rgba(15,38,67,.08);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(7,25,47,.055);
+}
+
+.report-summary-card::after {
+  content: '';
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  right: -28px;
+  top: -28px;
+  border-radius: 50%;
+  background: rgba(45,166,108,.08);
+}
+
+.report-summary-card span,
+.report-summary-card strong,
+.report-summary-card small {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+.report-summary-card span {
+  color: #718096;
+  font-size: .76rem;
+  font-weight: 760;
+  text-transform: uppercase;
+  letter-spacing: .045em;
+}
+
+.report-summary-card strong {
+  margin-top: 11px;
+  color: #0b2746;
+  font-size: clamp(1.35rem, 2.2vw, 1.85rem);
+  line-height: 1;
+  letter-spacing: -.03em;
+}
+
+.report-summary-card small {
+  margin-top: 10px;
+  color: #8a97a8;
+  font-size: .73rem;
+}
+
+.reports-table-panel {
+  overflow: hidden;
+  padding: 0;
+}
+
+.reports-table-head {
+  padding: 20px 22px 15px;
+}
+
+.reports-accounting-note {
+  margin: 0 22px 15px;
+  padding: 11px 13px;
+  border: 1px solid rgba(26, 115, 79, .12);
+  border-radius: 13px;
+  background: #f3fbf7;
+  color: #476657;
+  font-size: .78rem;
+  line-height: 1.55;
+}
+
+.reports-accounting-note strong {
+  color: #175b3d;
+}
+
+.reports-table-scroll {
+  overflow-x: auto;
+  border-top: 1px solid rgba(15,38,67,.07);
+  -webkit-overflow-scrolling: touch;
+}
+
+.reports-table {
+  width: 100%;
+  min-width: 1040px;
+  border-collapse: collapse;
+  font-size: .8rem;
+}
+
+.reports-table th {
+  padding: 11px 13px;
+  border-bottom: 1px solid rgba(15,38,67,.08);
+  background: #f7f9fb;
+  color: #6f7f91;
+  font-size: .67rem;
+  font-weight: 800;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: .055em;
+  white-space: nowrap;
+}
+
+.reports-table td {
+  padding: 13px;
+  border-bottom: 1px solid rgba(15,38,67,.06);
+  color: #31455d;
+  vertical-align: middle;
+}
+
+.reports-table tbody tr:hover {
+  background: #fbfcfd;
+}
+
+.reports-table td strong {
+  color: #162d48;
+}
+
+.reports-table td small {
+  display: block;
+  margin-top: 3px;
+  color: #8a97a7;
+  font-size: .7rem;
+  white-space: nowrap;
+}
+
+.report-reservation-link {
+  display: inline-flex;
+  flex-direction: column;
+  color: inherit;
+  text-decoration: none;
+}
+
+.report-reservation-link:hover strong {
+  color: #16845a;
+}
+
+.report-status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid rgba(15,38,67,.09);
+  border-radius: 999px;
+  background: #f7f9fb;
+  color: #4c6076;
+  font-size: .7rem;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.report-cell-money,
+.report-cell-money_emphasis,
+.report-cell-signed_money,
+.report-cell-number {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.report-cell-money_emphasis strong {
+  color: #9b4e19 !important;
+}
+
+.report-money-positive {
+  color: #176945 !important;
+}
+
+.report-money-negative {
+  color: #a84444 !important;
+}
+
+.reports-empty {
+  padding: 38px 20px !important;
+  text-align: center;
+}
+
+.reports-empty strong,
+.reports-empty span {
+  display: block;
+}
+
+.reports-empty span {
+  margin-top: 5px;
+  color: #8a97a7;
+}
+
+.reports-table-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 22px 15px;
+  color: #8a97a7;
+  font-size: .72rem;
+}
+
+.reports-print-heading {
+  display: none;
+}
+
+@media (max-width: 1280px) {
+  .reports-selector {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .reports-filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .reports-search-field {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 900px) {
+  .reports-hero,
+  .reports-filter-head,
+  .reports-table-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .reports-hero-actions,
+  .reports-export-actions {
+    width: 100%;
+  }
+
+  .reports-selector {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 3px;
+    scrollbar-width: none;
+  }
+
+  .reports-selector::-webkit-scrollbar {
+    display: none;
+  }
+
+  .report-selector-card {
+    flex: 0 0 164px;
+    min-height: 70px;
+  }
+
+  .reports-filter-meta {
+    width: 100%;
+  }
+
+  .reports-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reports-search-field {
+    grid-column: 1 / -1;
+  }
+
+  .reports-filter-actions {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+
+  .reports-filter-actions .btn {
+    flex: 1 1 0;
+  }
+
+  .reports-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .reports-hero {
+    padding: 19px;
+    border-radius: 22px;
+  }
+
+  .reports-hero-actions .btn,
+  .reports-export-actions .btn,
+  .reports-export-actions button {
+    flex: 1 1 125px;
+  }
+
+  .reports-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-search-field,
+  .reports-filter-actions {
+    grid-column: auto;
+  }
+
+  .reports-filter-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .reports-summary {
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+  }
+
+  .report-summary-card {
+    min-height: 112px;
+    padding: 15px;
+    border-radius: 17px;
+  }
+
+  .report-summary-card span {
+    font-size: .68rem;
+  }
+
+  .report-summary-card strong {
+    font-size: 1.22rem;
+  }
+
+  .reports-table-head {
+    padding: 17px 16px 13px;
+  }
+
+  .reports-accounting-note {
+    margin: 0 16px 13px;
+  }
+
+  .reports-table-footer {
+    padding: 11px 16px 13px;
+  }
+}
+
+@media print {
+  @page {
+    size: landscape;
+    margin: 11mm;
+  }
+
+  html,
+  body,
+  .admin-body,
+  .admin-main,
+  .admin-content {
+    background: #fff !important;
+  }
+
+  .admin-sidebar,
+  .admin-menu-backdrop,
+  .admin-topbar,
+  .admin-notification-standalone,
+  .admin-notification-floating,
+  .admin-bottom-nav,
+  .report-no-print,
+  .reports-export-actions {
+    display: none !important;
+  }
+
+  .admin-shell,
+  .admin-main,
+  .admin-content {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .reports-print-heading {
+    display: flex !important;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #bbb;
+  }
+
+  .reports-print-heading img {
+    width: 70px;
+    height: 46px;
+    object-fit: contain;
+  }
+
+  .reports-print-heading strong,
+  .reports-print-heading span {
+    display: block;
+  }
+
+  .reports-print-heading strong {
+    font-size: 16px;
+  }
+
+  .reports-print-heading span {
+    margin-top: 2px;
+    color: #666;
+    font-size: 10px;
+  }
+
+  .reports-summary {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .report-summary-card {
+    min-height: 0 !important;
+    padding: 9px !important;
+    border: 1px solid #bbb !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+
+  .report-summary-card::after {
+    display: none !important;
+  }
+
+  .report-summary-card span,
+  .report-summary-card small {
+    font-size: 8px !important;
+  }
+
+  .report-summary-card strong {
+    margin-top: 4px !important;
+    font-size: 13px !important;
+  }
+
+  .reports-table-panel {
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .reports-table-head {
+    padding: 0 0 7px !important;
+  }
+
+  .reports-table-head h3 {
+    font-size: 13px !important;
+  }
+
+  .reports-table-head p,
+  .reports-accounting-note,
+  .reports-table-footer {
+    font-size: 8px !important;
+  }
+
+  .reports-accounting-note {
+    margin: 0 0 7px !important;
+    padding: 6px !important;
+    border-radius: 0 !important;
+  }
+
+  .reports-table-scroll {
+    overflow: visible !important;
+    border-top: 0 !important;
+  }
+
+  .reports-table {
+    min-width: 0 !important;
+    font-size: 7px !important;
+  }
+
+  .reports-table th,
+  .reports-table td {
+    padding: 4px 5px !important;
+    border: 1px solid #bbb !important;
+  }
+
+  .reports-table th {
+    background: #eee !important;
+    color: #222 !important;
+    font-size: 6.5px !important;
+  }
+
+  .reports-table td,
+  .reports-table td strong,
+  .reports-table td small,
+  .report-status-pill {
+    color: #111 !important;
+  }
+
+  .report-status-pill {
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    font-size: 7px !important;
+  }
+
+  .reports-table a {
+    color: #111 !important;
+    text-decoration: none !important;
+  }
+
+  .reports-table-footer {
+    padding: 6px 0 0 !important;
+  }
+}
+
+/* ========================================================================== 
+   v1.2.118 — Admin native bottom tab bar parity
+   Match the public website's v1.2.114 native mobile tab bar while preserving
+   admin destinations and safe content clearance above the fixed navigation.
+   ========================================================================== */
+@media (max-width: 900px) {
+  .admin-body {
+    --mobile-bottom-nav-height: 66px;
+  }
+
+  .admin-main {
+    padding-bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 14px) !important;
+  }
+
+  .admin-bottom-nav {
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    align-items: end !important;
+    min-height: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 5px 7px calc(7px + env(safe-area-inset-bottom, 0px)) !important;
+    border: 0 !important;
+    border-top: 1px solid rgba(255,255,255,.08) !important;
+    border-radius: 0 !important;
+    background: rgba(6,18,29,.92) !important;
+    box-shadow: 0 -12px 30px rgba(0,0,0,.20) !important;
+    backdrop-filter: blur(22px) saturate(1.1) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(1.1) !important;
+  }
+
+  .admin-bottom-nav-item,
+  .admin-bottom-nav-create,
+  .admin-bottom-nav-create:hover,
+  .admin-bottom-nav-create:focus-visible,
+  .admin-bottom-nav-create.active {
+    position: relative !important;
+    min-width: 0 !important;
+    min-height: 52px !important;
+    margin: 0 !important;
+    padding: 6px 2px 4px !important;
+    gap: 4px !important;
+    border: 0 !important;
+    border-radius: 13px !important;
+    color: rgba(229,236,242,.53) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
+    font-size: .58rem !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    -webkit-tap-highlight-color: transparent !important;
+    transition: color .18s ease, transform .18s ease !important;
+  }
+
+  .admin-bottom-nav-item:hover,
+  .admin-bottom-nav-item:focus-visible,
+  .admin-bottom-nav-item.active {
+    color: #2CFF05 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .admin-bottom-nav-item::after,
+  .admin-bottom-nav-item.active::after,
+  .admin-bottom-nav-create::after,
+  .admin-bottom-nav-create.active::after {
+    display: none !important;
+  }
+
+  .admin-bottom-nav-item svg {
+    width: 21px !important;
+    height: 21px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    fill: none !important;
+    stroke: currentColor !important;
+    stroke-width: 2 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+    transform: none !important;
+    animation: none !important;
+    transition: transform .18s ease !important;
+  }
+
+  .admin-bottom-nav-item .admin-bottom-nav-more-icon circle {
+    fill: currentColor !important;
+    stroke: none !important;
+  }
+
+  .admin-bottom-nav-item span {
+    display: block !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    white-space: nowrap !important;
+    text-overflow: clip !important;
+    font-size: .58rem !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+  }
+
+  .admin-bottom-nav-create,
+  .admin-bottom-nav-create.active {
+    color: #2CFF05 !important;
+  }
+
+  .admin-bottom-nav-create .admin-bottom-nav-create-icon,
+  .admin-bottom-nav-create.active .admin-bottom-nav-create-icon,
+  .admin-bottom-nav-create:focus-visible .admin-bottom-nav-create-icon {
+    display: block !important;
+    width: 29px !important;
+    height: 29px !important;
+    margin: 0 !important;
+    padding: 5px !important;
+    border: 0 !important;
+    border-radius: 10px !important;
+    color: #2CFF05 !important;
+    background: rgba(44,255,5,.11) !important;
+    box-shadow: none !important;
+    transform: none !important;
+    animation: none !important;
+  }
+
+  .admin-bottom-nav-item.active svg,
+  .admin-bottom-nav-item:not(.admin-bottom-nav-create).active svg {
+    transform: none !important;
+    animation: none !important;
+  }
+
+  .admin-bottom-nav-item:active,
+  .admin-bottom-nav-create:active {
+    transform: scale(.96) !important;
+  }
+
+  .admin-bottom-nav-create:active .admin-bottom-nav-create-icon {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  body.admin-menu-open .admin-bottom-nav {
+    pointer-events: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .admin-bottom-nav-item,
+  .admin-bottom-nav-item span {
+    font-size: .54rem !important;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  @media (max-width: 900px) {
+    .admin-bottom-nav { background: rgba(6,18,29,.98) !important; }
+  }
+}
+
+/* ========================================================================== 
+   v1.2.122 — Native admin mobile surfaces
+   Extend bottom-tab parity into the actual admin screens: compact dashboard,
+   grouped panels, card-style reservation rows, touch-friendly filters/forms,
+   and mobile calendar/list surfaces.
+   ========================================================================== */
+@media(max-width:900px){
+  .admin-body{background:#f4f5f7!important}
+  .admin-content:not(.admin-content-calendar-only){padding:calc(env(safe-area-inset-top,0px) + 18px) 14px calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom,0px) + 22px)!important}
+  html.tlh-standalone-app .admin-content:not(.admin-content-calendar-only){padding-top:calc(env(safe-area-inset-top,0px) + 66px)!important}
+
+  .dashboard-welcome{margin:0 0 14px;padding:18px;border:1px solid #e1e5e8;border-radius:20px;background:#fff;box-shadow:none!important}
+  .dashboard-welcome h2{font-size:1.45rem!important;line-height:1.05!important;letter-spacing:-.04em!important}.dashboard-welcome p{margin-top:7px!important;font-size:.75rem!important;line-height:1.45!important}.dashboard-eyebrow,.dashboard-section-kicker{font-size:.6rem!important;letter-spacing:.14em!important}
+  .dashboard-section{margin-top:18px!important}.dashboard-section-head{align-items:flex-start!important;gap:8px!important;margin-bottom:10px!important}.dashboard-section-head>span{display:none!important}.dashboard-section-head h2{font-size:1.2rem!important}
+  .dashboard-action-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}.dashboard-action-card{min-height:122px!important;display:grid!important;grid-template-columns:1fr auto!important;align-content:space-between!important;padding:14px!important;border:1px solid #e1e6e9!important;border-radius:18px!important;background:#fff!important;box-shadow:none!important}.dashboard-action-icon{width:34px!important;height:34px!important;border-radius:11px!important}.dashboard-action-copy{grid-column:1/-1!important}.dashboard-action-copy small{font-size:.62rem!important}.dashboard-action-copy strong{font-size:1.55rem!important}.dashboard-action-copy span{font-size:.65rem!important}.dashboard-action-arrow{position:absolute!important;right:13px!important;top:13px!important}
+  .dashboard-primary-grid{grid-template-columns:1fr!important;gap:12px!important}.panel{border:1px solid #e1e6e9!important;border-radius:20px!important;background:#fff!important;box-shadow:none!important}.panel-head{gap:10px!important;padding:0!important;margin-bottom:14px!important}.panel-head h2,.panel-head h3{font-size:1.08rem!important}.panel-head p{font-size:.7rem!important}.panel-head .btn{min-height:38px!important}
+  .dashboard-schedule-list{gap:8px!important}.dashboard-schedule-item{grid-template-columns:60px minmax(0,1fr)!important;gap:10px!important;padding:13px!important;border:1px solid #e5e9ec!important;border-radius:15px!important;background:#fafbfc!important}.dashboard-schedule-time{grid-row:1/3!important}.dashboard-schedule-payment,.dashboard-row-actions{grid-column:2!important}.dashboard-schedule-title{align-items:flex-start!important;gap:7px!important}.dashboard-schedule-main>span,.dashboard-schedule-main>small{font-size:.67rem!important}.dashboard-row-actions{display:flex!important;gap:7px!important}.dashboard-row-actions .btn{flex:1!important}
+
+  .toolbar{display:grid!important;grid-template-columns:1fr 1fr!important;gap:9px!important;margin-bottom:12px!important;padding:12px!important;border:1px solid #e1e6e9!important;border-radius:18px!important;background:#fff!important}.toolbar .form-group,.toolbar>div{min-width:0!important}.toolbar input,.toolbar select{width:100%!important;min-height:44px!important;border-radius:12px!important;background:#f3f5f7!important}.toolbar .btn{min-height:44px!important}.toolbar .full,.toolbar [style*="grid-column"]{grid-column:1/-1!important}
+
+  .reservation-hub-panel{padding:14px!important}.reservation-hub-head{align-items:flex-start!important;flex-direction:column!important}.reservation-list-table tr,.batch-groups-table tr{padding:14px!important;border-radius:18px!important;background:#fff!important;box-shadow:none!important}.reservation-list-table td,.batch-groups-table td{grid-template-columns:minmax(82px,.38fr) minmax(0,1fr)!important;padding:9px 0!important}.reservation-list-table td::before,.batch-groups-table td::before{font-size:.61rem!important}.reservation-row-actions,.batch-group-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}.reservation-row-actions .btn,.batch-group-actions .btn{width:100%!important;min-height:40px!important}
+
+  .form-card,.detail-card,.admin-form-card{border:1px solid #e1e6e9!important;border-radius:20px!important;background:#fff!important;box-shadow:none!important}.admin-content .form-grid{grid-template-columns:1fr!important;gap:10px!important}.admin-content .form-group{min-width:0!important}.admin-content input,.admin-content select,.admin-content textarea{min-height:46px;border-radius:12px!important}.admin-content textarea{min-height:110px}.admin-content .btn{border-radius:12px!important}
+
+  .calendar-mobile-list{display:grid!important;gap:10px!important}.calendar-mobile-day{padding:13px!important;border:1px solid #e1e6e9!important;border-radius:18px!important;background:#fff!important;box-shadow:none!important}.calendar-mobile-date{min-width:58px!important}.calendar-mobile-bookings{gap:7px!important}.calendar-mobile-bookings .calendar-booking{border-radius:12px!important;padding:10px!important}
+
+  .admin-notification-standalone .admin-notification-bell,.admin-notification-floating .admin-notification-bell{border:1px solid rgba(255,255,255,.1)!important;background:rgba(6,18,29,.92)!important;color:#fff!important;box-shadow:0 8px 22px rgba(0,0,0,.16)!important}.admin-notification-count{background:#2CFF05!important;color:#071a33!important}
+}
+
+@media(max-width:390px){
+  .dashboard-action-grid{grid-template-columns:1fr 1fr!important}.dashboard-action-card{min-height:116px!important;padding:12px!important}.toolbar{grid-template-columns:1fr!important}.reservation-row-actions,.batch-group-actions{grid-template-columns:1fr!important}
+}
+
+/* ========================================================================== 
+   v1.2.126 — Full Admin Portal mobile optimization audit
+   Covers the complete admin surface: chrome, safe areas, tables, forms,
+   dialogs, reports, payments, content management, and operational workflows.
+   Desktop remains unchanged.
+   ========================================================================== */
+@media (max-width: 900px) {
+  /* Native mobile shell ---------------------------------------------------- */
+  .admin-body {
+    overflow-x: hidden;
+    background: #f3f5f7 !important;
+    -webkit-text-size-adjust: 100%;
+  }
+  .admin-shell,
+  .admin-main,
+  .admin-content { min-width: 0 !important; }
+
+  .admin-topbar {
+    min-height: 68px !important;
+    padding: 10px 14px !important;
+    gap: 10px !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 100 !important;
+    border-bottom: 1px solid rgba(7,26,51,.06) !important;
+    background: rgba(255,255,255,.94) !important;
+    box-shadow: 0 7px 22px rgba(7,26,51,.05) !important;
+    backdrop-filter: blur(18px) saturate(1.08) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.08) !important;
+  }
+  .admin-topbar-start { min-width: 0; gap: 10px !important; }
+  .admin-topbar-start > div { min-width: 0; }
+  .admin-topbar-start .small { display: none !important; }
+  .admin-topbar h1 {
+    max-width: min(56vw, 360px);
+    margin: 0 !important;
+    overflow: hidden;
+    color: #071a33 !important;
+    font-size: 1.08rem !important;
+    line-height: 1.15 !important;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .admin-menu-toggle {
+    flex: 0 0 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    border-radius: 13px !important;
+  }
+  .admin-topbar-actions { width: auto !important; margin: 0 0 0 auto !important; gap: 8px !important; }
+  .admin-topbar-actions > .btn { display: none !important; }
+  .admin-notification-bell { width: 44px !important; height: 44px !important; border-radius: 13px !important; }
+
+  /* Installed app: notch safe, but no duplicate empty spacer. */
+  html.tlh-standalone-app .admin-content:not(.admin-content-calendar-only) {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 64px) !important;
+  }
+  html.tlh-standalone-app .admin-notification-standalone,
+  html.tlh-standalone-app .admin-notification-floating {
+    top: calc(env(safe-area-inset-top, 0px) + 8px) !important;
+    right: 12px !important;
+  }
+
+  /* Full menu drawer respects iPhone safe areas and stays scrollable. */
+  html.admin-menu-js .admin-sidebar,
+  html.admin-menu-js.admin-menu-precollapsed .admin-sidebar,
+  html.admin-menu-js .admin-shell.is-menu-collapsed .admin-sidebar {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 14px) !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+  }
+  .admin-sidebar-head {
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px) * -1);
+    z-index: 2;
+    padding-top: 2px;
+    background: #06172e;
+  }
+  .admin-sidebar-close { min-width: 44px !important; min-height: 44px !important; }
+  .admin-nav a { min-height: 46px !important; }
+
+  /* Global content rhythm ------------------------------------------------- */
+  .admin-content:not(.admin-content-calendar-only) {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+    padding-bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom,0px) + 24px) !important;
+  }
+  .admin-content > * { max-width: 100%; }
+  .admin-grid,
+  .dashboard-primary-grid { gap: 12px !important; }
+
+  .panel,
+  .form-card,
+  .detail-card,
+  .admin-form-card,
+  .metric-card {
+    max-width: 100%;
+    border-radius: 18px !important;
+    box-shadow: none !important;
+  }
+  .panel { padding: 16px !important; }
+  .panel + .panel { margin-top: 12px; }
+  .panel-head {
+    align-items: flex-start !important;
+    gap: 10px !important;
+    margin-bottom: 14px !important;
+  }
+  .panel-head h2,
+  .panel-head h3 { line-height: 1.2 !important; }
+  .panel-head p,
+  .panel-head .muted { line-height: 1.45; }
+  .panel-head .admin-actions { justify-content: flex-start; width: 100%; }
+
+  /* Prevent iOS focus zoom and make every form touch friendly. */
+  .admin-content input:not([type="checkbox"]):not([type="radio"]),
+  .admin-content select,
+  .admin-content textarea,
+  .admin-content button,
+  .admin-content .btn {
+    font-size: 16px;
+  }
+  .admin-content input:not([type="checkbox"]):not([type="radio"]),
+  .admin-content select {
+    min-height: 46px !important;
+  }
+  .admin-content textarea { min-height: 104px !important; resize: vertical; }
+  .admin-content input[type="checkbox"],
+  .admin-content input[type="radio"] {
+    width: 20px !important;
+    height: 20px !important;
+    min-height: 20px !important;
+    flex: 0 0 20px;
+  }
+  .admin-content input[type="file"] { min-height: 46px; padding: 8px !important; }
+  .admin-content label { line-height: 1.35; }
+  .field-help { line-height: 1.45; }
+
+  .admin-content .form-grid,
+  .compact-form-grid,
+  .batch-payment-form-grid,
+  .batch-payment-coverage-grid,
+  .extension-current-summary {
+    grid-template-columns: 1fr !important;
+  }
+  .admin-section-label { margin-top: 8px !important; padding-top: 16px !important; }
+
+  .admin-actions,
+  .reservation-view-actions,
+  .reservation-overview-actions,
+  .batch-occurrence-actions,
+  .database-backup-actions {
+    gap: 8px !important;
+  }
+  .admin-actions .btn,
+  .admin-actions > form,
+  .database-backup-actions .btn,
+  .database-backup-actions form {
+    min-width: 0;
+  }
+
+  /* Generic mobile table cards ------------------------------------------- */
+  .table-wrap:has(.mobile-card-table),
+  .reports-table-scroll { overflow: visible !important; }
+  .mobile-card-table,
+  .reports-mobile-card-table {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    background: transparent !important;
+  }
+  .mobile-card-table thead,
+  .reports-mobile-card-table thead { display: none !important; }
+  .mobile-card-table tbody,
+  .reports-mobile-card-table tbody {
+    display: grid !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+  .mobile-card-table tbody > tr,
+  .reports-mobile-card-table tbody > tr {
+    display: grid !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 14px !important;
+    border: 1px solid #e0e5e9 !important;
+    border-radius: 17px !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+  .mobile-card-table tbody > tr:hover,
+  .reports-mobile-card-table tbody > tr:hover { background: #fff !important; }
+  .mobile-card-table td,
+  .reports-mobile-card-table td {
+    display: grid !important;
+    grid-template-columns: minmax(88px,.38fr) minmax(0,1fr) !important;
+    gap: 10px !important;
+    align-items: start !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 9px 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid #edf0f2 !important;
+    background: transparent !important;
+    color: #25384b !important;
+    text-align: left !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+  }
+  .mobile-card-table td::before,
+  .reports-mobile-card-table td::before {
+    content: attr(data-label);
+    color: #87929e;
+    font-size: .61rem;
+    font-weight: 850;
+    letter-spacing: .055em;
+    line-height: 1.35;
+    text-transform: uppercase;
+  }
+  .mobile-card-table td[data-priority="primary"],
+  .reports-mobile-card-table td[data-priority="primary"] {
+    grid-template-columns: 1fr !important;
+    padding-top: 0 !important;
+  }
+  .mobile-card-table td[data-priority="primary"]::before,
+  .reports-mobile-card-table td[data-priority="primary"]::before { display: none !important; }
+  .mobile-card-table td:last-child,
+  .reports-mobile-card-table td:last-child { border-bottom: 0 !important; padding-bottom: 0 !important; }
+  .mobile-card-table td[colspan],
+  .reports-mobile-card-table td[colspan] {
+    display: block !important;
+    padding: 10px !important;
+    border: 0 !important;
+    text-align: center !important;
+  }
+  .mobile-card-table td[colspan]::before,
+  .reports-mobile-card-table td[colspan]::before { display: none !important; }
+  .mobile-card-table td[data-label="Actions"],
+  .mobile-card-table td[data-label="Update"],
+  .mobile-card-table td[data-label="Account Actions"] {
+    grid-template-columns: 1fr !important;
+    padding-top: 12px !important;
+  }
+  .mobile-card-table td[data-label="Actions"]::before,
+  .mobile-card-table td[data-label="Update"]::before,
+  .mobile-card-table td[data-label="Account Actions"]::before { margin-bottom: 2px; }
+  .mobile-card-table .admin-actions,
+  .mobile-card-table .batch-occurrence-actions,
+  .mobile-card-table .reservation-list-actions,
+  .mobile-card-table .database-backup-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    white-space: normal !important;
+  }
+  .mobile-card-table .admin-actions > *,
+  .mobile-card-table .batch-occurrence-actions > *,
+  .mobile-card-table .reservation-list-actions > *,
+  .mobile-card-table .database-backup-actions > * {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .mobile-card-table .btn,
+  .mobile-card-table select,
+  .mobile-card-table input { width: 100% !important; max-width: none !important; }
+
+  /* Users, announcements, inquiries, content management ------------------ */
+  .admin-users-table .admin-user-reset-form {
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    gap: 7px !important;
+    width: 100% !important;
+  }
+  .admin-users-table .admin-user-reset-form input { width: 100% !important; max-width: none !important; }
+  .admin-page-announcements .admin-grid,
+  .admin-page-users .admin-grid,
+  .admin-page-tenants .admin-grid,
+  .admin-page-hero-slides .admin-grid,
+  .admin-page-gallery .admin-grid { grid-template-columns: 1fr !important; }
+  .admin-page-gallery .grid-3 { grid-template-columns: 1fr !important; gap: 10px !important; }
+  .admin-media-card {
+    grid-template-columns: 112px minmax(0,1fr) !important;
+    gap: 12px !important;
+    padding: 12px !important;
+    border-radius: 17px !important;
+    background: #fff !important;
+  }
+  .admin-media-card > img,
+  .admin-image-placeholder {
+    width: 112px !important;
+    height: 112px !important;
+    border-radius: 14px !important;
+  }
+  .admin-media-card .admin-actions { margin-top: 10px !important; }
+  .admin-media-card .admin-actions .btn { flex: 1 1 100px; text-align: center; }
+  .notification-page-list { border-radius: 17px !important; }
+  .notification-page-item { grid-template-columns: 9px minmax(0,1fr) !important; padding: 14px !important; }
+  .notification-page-copy span { font-size: .78rem !important; line-height: 1.45 !important; }
+
+  /* Notification popover behaves as a bounded native sheet. */
+  .admin-notification-popover,
+  html.tlh-standalone-app .admin-notification-standalone .admin-notification-popover,
+  html.tlh-standalone-app .admin-notification-floating .admin-notification-popover {
+    position: fixed !important;
+    top: calc(env(safe-area-inset-top,0px) + 62px) !important;
+    right: 10px !important;
+    left: 10px !important;
+    width: auto !important;
+    max-height: calc(100dvh - env(safe-area-inset-top,0px) - var(--mobile-bottom-nav-height) - env(safe-area-inset-bottom,0px) - 84px) !important;
+    border-radius: 20px !important;
+  }
+  .admin-notification-list { max-height: calc(100dvh - env(safe-area-inset-top,0px) - var(--mobile-bottom-nav-height) - env(safe-area-inset-bottom,0px) - 150px) !important; }
+
+  /* Reservation detail / edit / operational pages ------------------------ */
+  .reservation-detail-page,
+  .batch-detail-page { gap: 12px !important; }
+  .reservation-overview-panel,
+  .batch-overview-panel { padding: 16px !important; }
+  .reservation-overview-copy h2 { font-size: 1.28rem !important; }
+  .reservation-overview-actions,
+  .batch-overview-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+    width: 100% !important;
+  }
+  .reservation-overview-actions > *,
+  .batch-overview-actions > * { width: 100% !important; min-width: 0 !important; }
+  .reservation-action-menu { min-width: 0 !important; }
+  .reservation-action-menu > summary { width: 100%; text-align: center; }
+  .reservation-action-menu-popover { left: 0 !important; right: auto !important; width: min(240px, calc(100vw - 42px)) !important; }
+
+  .reservation-finance-strip,
+  .reservation-finance-strip.has-discount {
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+    margin: 16px -16px -16px !important;
+  }
+  .reservation-finance-strip > div { padding: 12px 16px !important; }
+  .reservation-detail-sections,
+  .reservation-secondary-grid,
+  .reservation-expanded-grid,
+  .reservation-text-details,
+  .reservation-history-body { grid-template-columns: 1fr !important; gap: 10px !important; }
+  .reservation-history-body > section + section { padding-left: 0 !important; padding-top: 16px !important; border-left: 0 !important; border-top: 1px solid var(--line) !important; }
+  .reservation-info-card { padding: 16px !important; }
+  .reservation-info-list > div { grid-template-columns: minmax(92px,.7fr) minmax(0,1.3fr) !important; gap: 10px !important; }
+  .reservation-detail-collapse > summary { padding: 16px !important; }
+  .reservation-detail-collapse-body { padding: 0 16px 16px !important; }
+  .reservation-payment-actions { display: grid !important; grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  .reservation-payment-actions .btn { width: 100%; }
+  .reservation-edit-panel { max-width: none !important; }
+  .reservation-edit-summary { margin: 12px 0 16px !important; gap: 8px !important; }
+  .schedule-availability,
+  .reschedule-preview,
+  .extension-preview,
+  .extension-payment-card { border-radius: 16px !important; }
+  .reservation-edit-actions { position: sticky; bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom,0px) + 8px); z-index: 25; margin: 14px -4px 0 !important; padding: 10px !important; border: 1px solid #dfe4e8; border-radius: 16px; background: rgba(255,255,255,.96); box-shadow: 0 10px 28px rgba(7,26,51,.12); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+
+  /* Admin reservation create / batch create ------------------------------- */
+  .admin-reservation-step-card { max-width: none !important; padding: 14px !important; }
+  .admin-reservation-step-card > .panel-head { margin-bottom: 14px !important; }
+  .admin-reservation-step-card .reservation-step-form { gap: 16px !important; }
+  .admin-booking-type-screen { padding: 14px 0 8px !important; }
+  .admin-booking-type-grid-reference { max-width: none !important; }
+  .booking-type-card { min-height: 92px; }
+  .admin-reference-booking-scheduler { min-height: 0 !important; border-radius: 17px !important; }
+  .batch-schedule-mode { grid-template-columns: 1fr !important; gap: 8px !important; }
+  .batch-mode-option span { padding: 13px 14px !important; }
+  .weekday-check-grid { grid-template-columns: repeat(4,minmax(0,1fr)) !important; gap: 7px !important; }
+  .batch-specific-panel { padding: 10px !important; }
+  .batch-specific-defaults { grid-template-columns: 1fr !important; }
+  .batch-specific-row { grid-template-columns: 1fr !important; padding: 11px !important; }
+  .batch-specific-row-status { min-height: 0 !important; }
+  .batch-live-check { grid-template-columns: 1fr !important; gap: 10px !important; padding: 13px !important; }
+  .batch-live-check-counts { grid-column: auto !important; display: grid !important; grid-template-columns: repeat(3,minmax(0,1fr)) !important; gap: 6px !important; }
+  .batch-live-check-counts span { min-width: 0 !important; white-space: normal !important; text-align: center !important; }
+  .batch-review-summary { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 8px !important; }
+  .batch-review-summary > div { padding: 11px !important; }
+  .batch-occurrences-panel { padding: 14px !important; }
+  .batch-occurrence-table { min-width: 0 !important; }
+  .batch-payment-history-table { min-width: 0 !important; }
+  .batch-payment-history-scope details { margin-top: 7px; }
+  .batch-payment-history-scope ul { margin: 8px 0 0; padding-left: 18px; }
+  .batch-payment-kpis { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 8px !important; }
+
+  /* Payments -------------------------------------------------------------- */
+  .collections-hero { padding: 18px 16px !important; border-radius: 19px !important; box-shadow: none !important; }
+  .collections-hero h2 { font-size: 1.45rem !important; }
+  .collections-hero-actions { width: 100% !important; display: grid !important; grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  .collections-hero-actions .btn { width: 100%; }
+  .collections-metrics { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 8px !important; }
+  .collection-metric-card { min-height: 108px !important; padding: 13px !important; border-radius: 16px !important; }
+  .collection-metric-card strong { font-size: clamp(1.15rem,5.6vw,1.55rem) !important; }
+  .collections-filters { grid-template-columns: 1fr !important; gap: 8px !important; }
+  .collections-search-field,
+  .collections-filter-actions { grid-column: auto !important; }
+  .collections-filter-actions { display: grid !important; grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  .collection-row { padding: 13px !important; border-radius: 17px !important; }
+  .collection-row-status { align-items: flex-start !important; }
+  .collection-row-finance { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  .collection-row-finance span:nth-child(3) { grid-column: 1/-1; }
+  .collection-row-actions { display: grid !important; grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  .collection-row-actions .btn { width: 100% !important; }
+  .collection-recent-row { padding: 12px 0 !important; }
+
+  /* Reports --------------------------------------------------------------- */
+  .reports-hero { padding: 17px !important; border-radius: 19px !important; box-shadow: none !important; }
+  .reports-hero h2 { font-size: 1.45rem !important; }
+  .reports-hero p { font-size: .78rem; line-height: 1.5; }
+  .reports-hero-actions,
+  .reports-export-actions { display: grid !important; grid-template-columns: repeat(2,minmax(0,1fr)) !important; width: 100% !important; }
+  .reports-hero-actions .btn,
+  .reports-export-actions .btn,
+  .reports-export-actions button { width: 100% !important; }
+  .reports-selector { margin-bottom: 12px !important; }
+  .report-selector-card { flex-basis: 146px !important; min-height: 64px !important; border-radius: 15px !important; }
+  .reports-filter-panel { padding: 15px !important; }
+  .reports-presets { flex-wrap: nowrap !important; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+  .reports-presets::-webkit-scrollbar { display: none; }
+  .report-preset-chip { flex: 0 0 auto; }
+  .reports-filters { grid-template-columns: 1fr !important; gap: 9px !important; }
+  .reports-filter-actions { grid-column: auto !important; display: grid !important; grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  .reports-summary { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 8px !important; }
+  .report-summary-card { min-height: 102px !important; padding: 13px !important; border-radius: 16px !important; box-shadow: none !important; }
+  .reports-table-panel { overflow: visible !important; }
+  .reports-table-head { padding: 15px 14px 10px !important; }
+  .reports-accounting-note { margin: 0 14px 12px !important; }
+  .reports-table-scroll { padding: 0 14px !important; border-top: 0 !important; }
+  .reports-mobile-card-table { font-size: .8rem !important; }
+  .reports-mobile-card-table td small { white-space: normal !important; }
+  .reports-mobile-card-table .report-cell-money,
+  .reports-mobile-card-table .report-cell-money_emphasis,
+  .reports-mobile-card-table .report-cell-signed_money,
+  .reports-mobile-card-table .report-cell-number { text-align: left !important; }
+  .reports-table-footer { padding: 12px 14px 14px !important; flex-direction: column; gap: 3px !important; }
+
+  /* Database backup / settings / rates ----------------------------------- */
+  .database-backup-summary { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 8px !important; }
+  .database-backup-summary .metric-card:last-child { grid-column: 1/-1; }
+  .database-backup-hero .panel-head { flex-direction: column !important; }
+  .database-backup-hero .inline-action-form,
+  .database-backup-hero .btn { width: 100% !important; }
+  .detail-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
+  .detail-item { padding: 12px !important; }
+
+  /* Calendar -------------------------------------------------------------- */
+  .admin-content-calendar-only { padding-bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom,0px) + 18px) !important; }
+  .booking-calendar-only-panel { padding: 0 12px 16px !important; border: 0 !important; border-radius: 0 !important; background: #f3f5f7 !important; }
+  .calendar-only-header-with-menu {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 35 !important;
+    margin: 0 -12px 12px !important;
+    padding: 10px 12px !important;
+    background: rgba(243,245,247,.94) !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+  }
+  html.tlh-standalone-app .calendar-only-header-with-menu {
+    padding-top: calc(env(safe-area-inset-top,0px) + 10px) !important;
+  }
+  .calendar-only-title h2 { font-size: 1.2rem !important; }
+  .calendar-nav-btn,
+  .admin-menu-toggle-calendar { width: 44px !important; height: 44px !important; min-height: 44px !important; border-radius: 13px !important; }
+  .calendar-mobile-day { grid-template-columns: 58px minmax(0,1fr) !important; gap: 10px !important; }
+
+  /* Native sheet dialogs / modals ---------------------------------------- */
+  .reservation-modal {
+    place-items: end center !important;
+    padding: calc(env(safe-area-inset-top,0px) + 8px) 0 0 !important;
+  }
+  .reservation-modal-dialog {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: calc(100dvh - env(safe-area-inset-top,0px) - 8px) !important;
+    border-radius: 24px 24px 0 0 !important;
+  }
+  .reservation-modal-header { position: sticky; top: 0; z-index: 3; padding: 16px !important; background: rgba(255,255,255,.97); }
+  .reservation-modal-body { padding: 14px 16px !important; }
+  .reservation-modal-footer { position: sticky; bottom: 0; z-index: 3; padding: 12px 16px calc(12px + env(safe-area-inset-bottom,0px)) !important; background: rgba(248,250,252,.97) !important; }
+  .reservation-modal-footer .btn { min-height: 46px; }
+
+  dialog.reservation-detail-dialog,
+  dialog.batch-payment-dialog {
+    position: fixed !important;
+    inset: auto 0 0 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    max-height: calc(100dvh - env(safe-area-inset-top,0px) - 8px) !important;
+    margin: 0 !important;
+    border-radius: 24px 24px 0 0 !important;
+  }
+  .reservation-detail-dialog-head { position: sticky; top: 0; z-index: 4; padding: 16px !important; background: rgba(255,255,255,.97); }
+  .reservation-detail-dialog-form { padding: 15px 16px calc(16px + env(safe-area-inset-bottom,0px)) !important; }
+  .reservation-detail-dialog-actions {
+    position: sticky !important;
+    bottom: calc(-16px - env(safe-area-inset-bottom,0px)) !important;
+    z-index: 4;
+    display: grid !important;
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+    margin: 0 -16px calc(-16px - env(safe-area-inset-bottom,0px)) !important;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom,0px)) !important;
+    border-top: 1px solid var(--line);
+    background: rgba(255,255,255,.97);
+  }
+  .reservation-detail-dialog-actions .btn { width: 100% !important; }
+
+  /* Avoid content hiding behind the fixed bottom tabs. */
+  .admin-content > :last-child { margin-bottom: 4px; }
+}
+
+@media (max-width: 560px) {
+  .admin-content:not(.admin-content-calendar-only) { padding-left: 10px !important; padding-right: 10px !important; }
+  .panel { padding: 14px !important; border-radius: 17px !important; }
+  .admin-topbar { padding-left: 10px !important; padding-right: 10px !important; }
+  .admin-topbar h1 { max-width: 48vw; font-size: 1rem !important; }
+
+  .mobile-card-table td,
+  .reports-mobile-card-table td { grid-template-columns: 80px minmax(0,1fr) !important; gap: 8px !important; }
+  .mobile-card-table .admin-actions,
+  .mobile-card-table .batch-occurrence-actions,
+  .mobile-card-table .reservation-list-actions,
+  .mobile-card-table .database-backup-actions { grid-template-columns: 1fr !important; }
+  .admin-users-table .admin-user-reset-form { grid-template-columns: 1fr !important; }
+
+  .admin-media-card { grid-template-columns: 92px minmax(0,1fr) !important; }
+  .admin-media-card > img,
+  .admin-image-placeholder { width: 92px !important; height: 92px !important; }
+
+  .reservation-overview-actions,
+  .batch-overview-actions,
+  .reservation-payment-actions,
+  .collections-hero-actions,
+  .collection-row-actions,
+  .reports-hero-actions,
+  .reports-export-actions,
+  .reports-filter-actions { grid-template-columns: 1fr !important; }
+
+  .batch-review-summary,
+  .batch-payment-kpis,
+  .collections-metrics,
+  .reports-summary,
+  .database-backup-summary { grid-template-columns: 1fr !important; }
+  .database-backup-summary .metric-card:last-child { grid-column: auto; }
+
+  .weekday-check-grid { grid-template-columns: repeat(3,minmax(0,1fr)) !important; }
+  .collection-row-finance { grid-template-columns: 1fr 1fr !important; }
+  .collection-row-finance span:nth-child(3) { grid-column: 1/-1; }
+  .reports-table-scroll { padding: 0 10px !important; }
+  .reports-accounting-note { margin-left: 10px !important; margin-right: 10px !important; }
+
+  .reservation-info-list > div { grid-template-columns: 1fr !important; gap: 3px !important; }
+  .reservation-info-list dd { text-align: left !important; }
+  .reservation-detail-dialog-actions { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 390px) {
+  .admin-media-card { grid-template-columns: 1fr !important; }
+  .admin-media-card > img,
+  .admin-image-placeholder { width: 100% !important; height: 160px !important; }
+  .dashboard-action-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  .dashboard-action-card { min-height: 108px !important; }
+  .collection-row-finance { grid-template-columns: 1fr !important; }
+  .collection-row-finance span:nth-child(3) { grid-column: auto; }
+}
+
+/* v1.2.126 - Admin login mobile input/safe-area hardening. */
+@media (max-width: 760px) {
+  .admin-login-panel {
+    padding-top: calc(env(safe-area-inset-top,0px) + 18px) !important;
+    padding-bottom: calc(env(safe-area-inset-bottom,0px) + 22px) !important;
+  }
+  .admin-login-input-wrap input,
+  .admin-login-submit { font-size: 16px !important; }
+  .admin-login-panel-inner { max-width: 480px; }
+}

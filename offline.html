@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#06172e">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Offline | The Leisure Hub</title>
+  <style>
+    :root{color-scheme:light;--navy:#06172e;--navy2:#0f3658;--green:#2CFF05;--ink:#14283b;--muted:#60758a}
+    *{box-sizing:border-box}
+    html,body{min-height:100%;margin:0}
+    body{display:grid;place-items:center;padding:28px;background:radial-gradient(circle at 80% 10%,rgba(44,255,5,.16),transparent 28%),linear-gradient(145deg,var(--navy),var(--navy2));font-family:Inter,Arial,sans-serif;color:#fff}
+    .offline-card{width:min(560px,100%);padding:34px;border:1px solid rgba(255,255,255,.14);border-radius:28px;background:rgba(255,255,255,.97);box-shadow:0 28px 90px rgba(0,0,0,.28);color:var(--ink);text-align:center}
+    .offline-logo{width:min(220px,58vw);height:auto;margin:0 auto 22px;display:block;filter:drop-shadow(0 8px 22px rgba(6,23,46,.08))}
+    .eyebrow{margin:0 0 8px;color:#5c8f12;font-size:.72rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+    h1{margin:0;color:var(--navy);font-size:clamp(1.9rem,7vw,2.7rem);line-height:1.04}
+    p{margin:15px auto 0;max-width:440px;color:var(--muted);font-size:.97rem;line-height:1.65}
+    .notice{margin:22px 0 0;padding:14px 16px;border-radius:14px;background:#f3f7f9;color:#3f566b;font-size:.86rem;line-height:1.55;text-align:left}
+    button{margin-top:24px;border:0;border-radius:12px;padding:13px 20px;background:var(--navy);color:#fff;font:inherit;font-weight:850;cursor:pointer;box-shadow:0 8px 20px rgba(6,23,46,.18)}
+    button:focus-visible{outline:3px solid rgba(44,255,5,.55);outline-offset:3px}
+    .tagline{margin-top:22px;color:#5c8f12;font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+  </style>
+</head>
+<body>
+  <main class="offline-card">
+    <img class="offline-logo" src="assets/img/tlh-logo.png" alt="The Leisure Hub">
+    <p class="eyebrow">Connection Required</p>
+    <h1>You’re offline</h1>
+    <p>The Leisure Hub could not reach the server. Reconnect to the internet, then try again.</p>
+    <div class="notice"><strong>Live actions stay online-only.</strong> Reservation availability, booking submissions, admin actions, payments, refunds, and schedule changes always require a fresh server connection.</div>
+    <button type="button" onclick="window.location.reload()">Try Again</button>
+    <div class="tagline">Designed For Premium Experience</div>
+  </main>
+</body>
+</html>
