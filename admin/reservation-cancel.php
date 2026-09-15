@@ -279,6 +279,12 @@ if (!$cancellation && !reservation_can_cancel($booking)) {
 $adminPageTitle = $cancellation ? 'Cancellation Settlement' : 'Cancel Reservation';
 $bookingIsCancelled = $cancellation || (string)($booking['status'] ?? '') === 'cancelled';
 $remainingRefund = $cancellation ? max(0, round((float)$cancellation['refund_due'] - (float)$cancellation['refunded_amount'], 2)) : (float)$calculation['refund_due'];
+$grossPaidForCancellation = $cancellation
+    ? max(0, round((float)$cancellation['paid_before_cancellation'], 2))
+    : max(0, round((float)$calculation['amount_paid'], 2));
+$netRetainedAfterSettlement = $cancellation
+    ? max(0, round((float)$ledgerTotals['net_paid'], 2))
+    : max(0, round($grossPaidForCancellation - (float)$calculation['refund_due'], 2));
 include __DIR__ . '/_header.php';
 ?>
 <div class="admin-grid cancellation-workflow-grid">
@@ -295,14 +301,24 @@ include __DIR__ . '/_header.php';
       <strong>50% cancellation policy:</strong> The venue retains 50% of the reservation price. A fully paid client receives the other 50% back. For a partially paid reservation, only the amount paid above the 50% charge is refundable; if the payment is below the charge, the difference remains due.
     </div>
 
-    <div class="cancellation-settlement-grid">
+    <div class="cancellation-settlement-grid cancellation-settlement-grid-v2">
       <div><span>Original Reservation Price</span><strong><?= money($calculation['original_total']) ?></strong></div>
+      <div><span>Client Paid</span><strong><?= money($grossPaidForCancellation) ?></strong></div>
       <div><span>Cancellation Charge (<?= e(rtrim(rtrim(number_format((float)$calculation['rate'], 2, '.', ''), '0'), '.')) ?>%)</span><strong><?= money($calculation['cancellation_fee']) ?></strong></div>
-      <div><span>Payments Received Before Cancellation</span><strong><?= money($calculation['amount_paid']) ?></strong></div>
-      <div><span>Policy Refundable Portion</span><strong><?= money($calculation['policy_refundable_portion']) ?></strong></div>
-      <div class="<?= (float)$calculation['refund_due'] > 0 ? 'is-refund' : '' ?>"><span>Refund Due From Amount Paid</span><strong><?= money($calculation['refund_due']) ?></strong></div>
+      <div class="<?= (float)$calculation['refund_due'] > 0 ? 'is-refund' : '' ?>"><span><?= $cancellation ? 'Refund Required' : 'Refund to Client' ?></span><strong><?= money($calculation['refund_due']) ?></strong></div>
+      <div class="is-net"><span><?= $cancellation ? 'Net Collected Now' : 'Net Retained After Refund' ?></span><strong><?= money($netRetainedAfterSettlement) ?></strong></div>
       <div class="<?= (float)$calculation['balance_due'] > 0 ? 'is-balance' : '' ?>"><span>Cancellation Balance Still Due</span><strong><?= money($calculation['balance_due']) ?></strong></div>
     </div>
+
+    <?php if ((float)$calculation['refund_due'] > 0): ?>
+      <div class="cancellation-ledger-explainer" aria-label="Cancellation payment ledger treatment">
+        <div class="cancellation-ledger-icon" aria-hidden="true">−</div>
+        <div>
+          <strong>The original payment stays in Payment History.</strong>
+          <span>When the refund is completed, the system records <b>−<?= money((float)$calculation['refund_due']) ?></b> as a Refund transaction. The original <?= money($grossPaidForCancellation) ?> payment is never edited or deleted.</span>
+        </div>
+      </div>
+    <?php endif; ?>
 
     <?php if (!$cancellation): ?>
       <form method="post" class="cancellation-form" data-cancellation-form>
@@ -316,12 +332,12 @@ include __DIR__ . '/_header.php';
         </div>
 
         <?php if ((float)$calculation['refund_due'] > 0): ?>
-          <fieldset class="cancellation-refund-options">
-            <legend>Refund Handling</legend>
-            <label><input type="radio" name="refund_handling" value="pending" checked data-refund-handling> <span><strong>Mark refund as pending</strong><small>Cancel now, return the money through the agreed payment channel, and record the completed refund afterward.</small></span></label>
-            <label><input type="radio" name="refund_handling" value="record_now" data-refund-handling> <span><strong>Record a completed refund now</strong><small>Choose this only when the full <?= money($calculation['refund_due']) ?> has already been returned to the client.</small></span></label>
+          <fieldset class="cancellation-refund-options cancellation-refund-options-v2">
+            <legend>Has the refund already been returned to the client?</legend>
+            <label class="cancellation-refund-choice"><input type="radio" name="refund_handling" value="pending" checked data-refund-handling> <span><strong>No — Refund Later</strong><small>Cancel the reservation now and keep <?= money($calculation['refund_due']) ?> as <b>Refund Pending</b>. Record the deduction only after the money is actually returned.</small></span></label>
+            <label class="cancellation-refund-choice"><input type="radio" name="refund_handling" value="record_now" data-refund-handling> <span><strong>Yes — Record Refund Now</strong><small>The client already received <?= money($calculation['refund_due']) ?>. Record it now as a negative Refund transaction in Payment History.</small></span></label>
           </fieldset>
-          <div class="alert alert-info">This website records refund accounting and reference details only. It does not automatically send money through GCash, bank transfer, card, or another payment provider.</div>
+          <div class="alert alert-info cancellation-refund-provider-note">The system records the accounting deduction only. It does not transfer money automatically through GCash, bank transfer, card, or another payment provider.</div>
           <div class="form-grid cancellation-refund-fields" data-refund-fields>
             <div class="form-group"><label for="refundMethod">Refund Method</label><select id="refundMethod" name="refund_method" data-booking-payment-method><?php foreach (booking_payment_methods() as $method): ?><option value="<?= e($method) ?>"><?= e(booking_payment_method_label($method)) ?></option><?php endforeach; ?></select></div>
             <div class="form-group"><label for="refundReference">Refund Reference</label><input id="refundReference" name="refund_reference" maxlength="120" data-booking-payment-reference><span class="field-help" data-booking-payment-reference-help>Optional for cash refunds.</span></div>
@@ -336,7 +352,9 @@ include __DIR__ . '/_header.php';
 
         <div class="cancellation-form-actions">
           <a class="btn btn-outline" href="reservation-view.php?id=<?= $id ?>">Keep Reservation</a>
-          <button class="btn btn-danger" type="submit" onclick="return confirm('Cancel this reservation and apply the 50% cancellation policy?');">Confirm Cancellation</button>
+          <button class="btn btn-danger cancellation-submit-btn" type="submit" data-cancellation-submit data-refund-amount="<?= e(number_format((float)$calculation['refund_due'], 2, '.', '')) ?>">
+            <span data-cancellation-submit-label><?= (float)$calculation['refund_due'] > 0 ? 'Cancel Reservation · Refund Pending' : 'Confirm Cancellation' ?></span>
+          </button>
         </div>
       </form>
     <?php else: ?>
@@ -347,7 +365,7 @@ include __DIR__ . '/_header.php';
       </div>
 
       <?php if ((string)$cancellation['refund_status'] === 'pending' && $remainingRefund > 0): ?>
-        <div class="alert alert-warning"><strong>Refund pending:</strong> <?= money($remainingRefund) ?> still needs to be returned to the client.</div>
+        <div class="alert alert-warning cancellation-refund-pending-v2"><strong>Refund Pending · <?= money($remainingRefund) ?></strong><span>The original payment remains untouched. After the money is returned, record the refund below and the system will automatically deduct it from Net Collected.</span></div>
         <form method="post" class="cancellation-form">
           <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
           <input type="hidden" name="action" value="record_refund">
@@ -358,7 +376,8 @@ include __DIR__ . '/_header.php';
             <div class="form-group"><label for="pendingRefundAt">Refunded At</label><input id="pendingRefundAt" type="datetime-local" name="refund_at" value="<?= date('Y-m-d\TH:i') ?>" required></div>
             <div class="form-group form-group-wide"><label for="pendingRefundNotes">Refund Notes</label><textarea id="pendingRefundNotes" name="refund_notes" rows="3"></textarea></div>
           </div>
-          <div class="cancellation-form-actions"><a class="btn btn-outline" href="reservation-view.php?id=<?= $id ?>">Back</a><button class="btn btn-primary" type="submit" onclick="return confirm('Record the full refund of <?= e(money($remainingRefund)) ?>?');">Record <?= money($remainingRefund) ?> Refund</button></div>
+          <div class="cancellation-refund-preview"><span>Payment History entry</span><strong>−<?= money($remainingRefund) ?> Refund</strong><small>Net collected after refund: <?= money(max(0, round((float)$ledgerTotals['net_paid'] - $remainingRefund, 2))) ?></small></div>
+          <div class="cancellation-form-actions"><a class="btn btn-outline" href="reservation-view.php?id=<?= $id ?>">Back</a><button class="btn btn-primary" type="submit" onclick="return confirm('Confirm that <?= e(money($remainingRefund)) ?> has already been returned to the client and record it as a negative Refund transaction?');">Record Refund &amp; Deduct from Payments</button></div>
         </form>
       <?php elseif ((string)$cancellation['refund_status'] === 'refunded'): ?>
         <div class="alert alert-success"><strong>Refund completed:</strong> <?= money($cancellation['refunded_amount']) ?> was recorded via <?= e(booking_payment_method_label((string)$cancellation['refund_method'])) ?><?= !empty($cancellation['refund_reference']) ? ' · Reference ' . e((string)$cancellation['refund_reference']) : '' ?> on <?= e(date('M j, Y g:i A', strtotime((string)$cancellation['refunded_at']))) ?>.</div>
@@ -388,17 +407,49 @@ include __DIR__ . '/_header.php';
   if (!form) return;
   const radios = form.querySelectorAll('[data-refund-handling]');
   const fields = form.querySelector('[data-refund-fields]');
-  if (!radios.length || !fields) return;
+  const submit = form.querySelector('[data-cancellation-submit]');
+  const submitLabel = form.querySelector('[data-cancellation-submit-label]');
+
+  const money = (value) => {
+    const amount = Number(value || 0);
+    return '₱' + amount.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  };
 
   const sync = () => {
+    if (!radios.length || !fields) return;
     const selected = form.querySelector('[data-refund-handling]:checked');
     const active = selected && selected.value === 'record_now';
     fields.hidden = !active;
     fields.querySelectorAll('input,select,textarea').forEach((control) => {
       control.disabled = !active;
     });
+    form.querySelectorAll('.cancellation-refund-choice').forEach((choice) => {
+      const radio = choice.querySelector('[data-refund-handling]');
+      choice.classList.toggle('is-selected', !!radio && radio.checked);
+    });
+    if (submit && submitLabel) {
+      const refundAmount = Number(submit.dataset.refundAmount || 0);
+      submitLabel.textContent = active
+        ? 'Cancel & Record ' + money(refundAmount) + ' Refund'
+        : 'Cancel Reservation · Refund Pending';
+      submit.classList.toggle('is-refund-now', active);
+    }
   };
   radios.forEach((radio) => radio.addEventListener('change', sync));
+  form.addEventListener('submit', (event) => {
+    const selected = form.querySelector('[data-refund-handling]:checked');
+    const active = selected && selected.value === 'record_now';
+    const refundAmount = submit ? Number(submit.dataset.refundAmount || 0) : 0;
+    let message = 'Cancel this reservation and apply the 50% cancellation policy?';
+    if (refundAmount > 0) {
+      message = active
+        ? 'Confirm that ' + money(refundAmount) + ' has already been returned to the client? The system will cancel the reservation and record the refund as a negative payment transaction.'
+        : 'Cancel this reservation and mark ' + money(refundAmount) + ' as Refund Pending? No refund deduction will be recorded until the money is actually returned.';
+    }
+    if (!window.confirm(message)) {
+      event.preventDefault();
+    }
+  });
   sync();
 }());
 </script>

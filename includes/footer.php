@@ -16,7 +16,7 @@ $mobileMoreActive = in_array($currentPage, $mobileMorePages, true);
     </div>
     <div><h4>Explore</h4><a href="venue.php">Our Venue</a><a href="sports.php">Sports Court</a><a href="events.php">Events</a><a href="gallery.php">Gallery</a></div>
     <div><h4>Visit & Grow</h4><a href="stores.php">Stores & Tenants</a><a href="leasing.php">Commercial Leasing</a><a href="contact.php">Contact Us</a><a href="terms.php">Policies</a></div>
-    <div><h4>Reservations</h4><a href="reserve.php">Reserve Now</a><a href="track.php">Track Reservation</a><a href="availability.php">Availability</a><button class="pwa-install-button" type="button" data-pwa-install hidden>Install App</button><p><?= e(setting('phone')) ?></p></div>
+    <div><h4>Reservations</h4><a href="reserve.php">Reserve Now</a><a href="track.php">Track Reservation</a><a href="availability.php">Availability</a><button class="pwa-install-button" type="button" data-pwa-install hidden>Install App</button><a class="footer-admin-login" href="admin/login.php"><span class="footer-admin-login-icon" aria-hidden="true">&#128274;</span> Admin Login</a><p><?= e(setting('phone')) ?></p></div>
   </div>
   <div class="container footer-bottom"><span>© <?= date('Y') ?> <?= e(setting('site_name')) ?>. All rights reserved.</span><span><?= e(setting('address')) ?></span></div>
 </footer>
@@ -84,7 +84,7 @@ $mobileMoreActive = in_array($currentPage, $mobileMorePages, true);
   <section class="mobile-more-panel" role="dialog" aria-modal="true" aria-labelledby="mobileMoreTitle">
     <div class="mobile-more-head"><div><p class="eyebrow">Explore</p><h2 id="mobileMoreTitle">More from The Leisure Hub</h2></div><button class="mobile-more-close" type="button" data-mobile-more-close aria-label="Close">×</button></div>
     <nav class="mobile-more-links" aria-label="More pages">
-      <a href="venue.php">Our Venue</a><a href="sports.php">Sports Court</a><a href="events.php">Events</a><a href="stores.php">Stores &amp; Tenants</a><a href="leasing.php">Commercial Leasing</a><a href="gallery.php">Gallery</a><a href="contact.php">Contact Us</a><a href="terms.php">Policies</a>
+      <a href="venue.php">Our Venue</a><a href="sports.php">Sports Court</a><a href="events.php">Events</a><a href="stores.php">Stores &amp; Tenants</a><a href="leasing.php">Commercial Leasing</a><a href="gallery.php">Gallery</a><a href="contact.php">Contact Us</a><a href="terms.php">Policies</a><a class="mobile-more-admin-login" href="admin/login.php"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span><strong>Admin Login</strong><small>Authorized staff access</small></span><span class="mobile-more-admin-arrow" aria-hidden="true">&rarr;</span></a>
     </nav>
   </section>
 </div>

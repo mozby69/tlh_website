@@ -8,7 +8,7 @@
  * when the connection is unavailable.
  */
 
-const CACHE_VERSION = 'tlh-pwa-v1.2.135-refined-mobile-hero-cta';
+const CACHE_VERSION = 'tlh-pwa-v1.2.139-cancellation-refund-ledger';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const PAGE_CACHE = `${CACHE_VERSION}-pages`;
 

@@ -1972,6 +1972,22 @@ function admin_required(): void
         $_SESSION['admin_name'] = (string)$account['full_name'];
         $_SESSION['admin_role'] = (string)$account['role'];
         $validated = true;
+
+        // Calendar Viewer is deliberately read-only. This server-side route
+        // gate protects restricted pages even when somebody types the URL
+        // directly instead of relying on hidden navigation links.
+        if (is_calendar_viewer()) {
+            $currentScript = basename((string)($_SERVER['PHP_SELF'] ?? ''));
+            $calendarViewerAllowed = [
+                'booking-calendar.php',
+                'calendar-reservation-action.php',
+                'logout.php',
+            ];
+            if (!in_array($currentScript, $calendarViewerAllowed, true)) {
+                flash('info', 'This account has read-only Calendar access.');
+                redirect('booking-calendar.php');
+            }
+        }
     } catch (Throwable $e) {
         $_SESSION = [];
         if (session_status() === PHP_SESSION_ACTIVE) {
@@ -1997,6 +2013,25 @@ function current_admin(): ?array
 function is_admin(): bool
 {
     return ($_SESSION['admin_role'] ?? '') === 'admin';
+}
+
+function is_calendar_viewer(): bool
+{
+    return ($_SESSION['admin_role'] ?? '') === 'calendar_viewer';
+}
+
+function admin_role_label(?string $role): string
+{
+    return match ((string)$role) {
+        'admin' => 'Administrator',
+        'calendar_viewer' => 'Calendar Viewer',
+        default => 'Staff',
+    };
+}
+
+function admin_home_url(): string
+{
+    return is_calendar_viewer() ? 'booking-calendar.php' : 'index.php';
 }
 
 /**
@@ -3219,4 +3254,64 @@ ensure_v1057_schema();
 ensure_v1059_schema();
 ensure_v1216_schema();
 ensure_v1244_schema();
+
+
+/**
+ * v1.2.137 introduces the Calendar Viewer account role.
+ * Older installs may use an ENUM limited to admin/staff; expand it in place.
+ */
+function ensure_v12137_schema(): void
+{
+    static $done = false;
+    if ($done) return;
+    $done = true;
+
+    try {
+        $pdo = db();
+        $stmt = $pdo->query("SELECT DATA_TYPE, COLUMN_TYPE, CHARACTER_MAXIMUM_LENGTH FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='admins' AND COLUMN_NAME='role' LIMIT 1");
+        $column = $stmt->fetch();
+        if (!$column) return;
+
+        $dataType = strtolower((string)($column['DATA_TYPE'] ?? ''));
+        $columnType = strtolower((string)($column['COLUMN_TYPE'] ?? ''));
+        $length = (int)($column['CHARACTER_MAXIMUM_LENGTH'] ?? 0);
+
+        if ($dataType === 'enum' && !str_contains($columnType, "'calendar_viewer'")) {
+            $pdo->exec("ALTER TABLE admins MODIFY role ENUM('admin','staff','calendar_viewer') NOT NULL DEFAULT 'staff'");
+        } elseif (in_array($dataType, ['varchar', 'char'], true) && $length > 0 && $length < 15) {
+            $pdo->exec("ALTER TABLE admins MODIFY role VARCHAR(32) NOT NULL DEFAULT 'staff'");
+        }
+    } catch (Throwable $e) {
+        // Existing compatible databases need no change. Older installs retry
+        // this lightweight migration on the next request if ALTER is blocked.
+    }
+}
+
+
+
+/**
+ * v1.2.138 adds soft-delete support for admin accounts.
+ * Keeping the admin row preserves historical attribution on reservations,
+ * payments, cancellations, batches, and other audit records.
+ */
+function ensure_v12138_schema(): void
+{
+    static $done = false;
+    if ($done) return;
+    $done = true;
+
+    try {
+        $pdo = db();
+        $stmt = $pdo->query("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='admins' AND COLUMN_NAME='deleted_at'");
+        if ((int)$stmt->fetchColumn() === 0) {
+            $pdo->exec("ALTER TABLE admins ADD COLUMN deleted_at DATETIME NULL");
+        }
+    } catch (Throwable $e) {
+        // Compatible databases need no change. If ALTER is temporarily blocked,
+        // the lightweight migration retries on the next request.
+    }
+}
+
 ensure_v1259_schema();
+ensure_v12137_schema();
+ensure_v12138_schema();

@@ -2682,3 +2682,85 @@ body.is-navigating::before {
   .admin-login-submit { font-size: 16px !important; }
   .admin-login-panel-inner { max-width: 480px; }
 }
+
+
+/* v1.2.137 - Calendar Viewer role: read-only, calendar-first admin shell. */
+.admin-calendar-viewer .admin-sidebar .admin-nav { padding-bottom: 18px; }
+.admin-calendar-viewer .admin-user-copy span { text-transform: none; }
+.calendar-viewer-readonly-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 6px;
+  padding: 3px 8px;
+  border: 1px solid rgba(5,23,46,.12);
+  border-radius: 999px;
+  background: #eef2f6;
+  color: #506174;
+  font-size: .66rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.calendar-viewer-readonly-note {
+  display: grid;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 13px 14px;
+  border: 1px solid rgba(44,255,5,.24);
+  border-radius: 14px;
+  background: rgba(44,255,5,.07);
+  color: #17304d;
+}
+.calendar-viewer-readonly-note strong { font-size: .9rem; }
+.calendar-viewer-readonly-note span { color: #5f6f80; font-size: .8rem; line-height: 1.45; }
+.month-day-head .calendar-day-number { font-weight: 800; color: inherit; }
+.admin-calendar-viewer .admin-notification-floating,
+.admin-calendar-viewer .admin-notification-standalone { display: none !important; }
+
+@media (max-width: 760px) {
+  .admin-calendar-viewer .admin-content-calendar-only {
+    padding-bottom: calc(env(safe-area-inset-bottom,0px) + 16px) !important;
+  }
+  .admin-calendar-viewer .booking-calendar-only-panel { padding-bottom: calc(env(safe-area-inset-bottom,0px) + 12px) !important; }
+  .admin-calendar-viewer .reservation-modal-footer { grid-template-columns: 1fr !important; }
+  .admin-calendar-viewer .reservation-modal-footer > :not([data-reservation-modal-close]) { display: none !important; }
+}
+
+/* v1.2.138 - User account deletion controls. */
+.admin-users-panel-head > div { min-width: 0; }
+.admin-users-panel-head p { margin: 5px 0 0; max-width: 760px; }
+.admin-user-account-actions { align-items: center; flex-wrap: wrap; }
+.admin-user-account-actions .inline-action-form { margin: 0; }
+.admin-user-delete-btn { box-shadow: none; }
+.admin-current-account-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 7px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(44,255,5,.15);
+  color: #17304d;
+  font-size: .66rem;
+  font-weight: 800;
+  line-height: 1.45;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+.admin-current-account-note { display: inline-block; max-width: 220px; line-height: 1.35; }
+
+@media (max-width: 760px) {
+  .admin-user-account-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+    gap: 8px !important;
+    width: 100%;
+  }
+  .admin-user-account-actions .inline-action-form,
+  .admin-user-account-actions .btn { width: 100%; }
+  .admin-current-account-note { max-width: none; }
+}
+
+@media (max-width: 390px) {
+  .admin-user-account-actions { grid-template-columns: 1fr !important; }
+}

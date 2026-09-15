@@ -457,9 +457,10 @@ include __DIR__ . '/_header.php';
         <?php if ($reservationDiscountAmount > 0): ?><div><span>Original Calculated Total</span><strong><?= money($reservationCalculatedTotal) ?></strong></div><div><span>Flexible Discount</span><strong>−<?= money($reservationDiscountAmount) ?></strong></div><?php endif; ?>
         <div><span>Original Client Payable</span><strong><?= money($cancellation['original_total']) ?></strong></div>
         <div><span>50% Cancellation Charge</span><strong><?= money($cancellation['cancellation_fee']) ?></strong></div>
-        <div><span>Payments Before Cancellation</span><strong><?= money($cancellation['paid_before_cancellation']) ?></strong></div>
-        <div><span>Refund Due</span><strong><?= money($cancellation['refund_due']) ?></strong></div>
-        <div class="<?= (float)$cancellation['refunded_amount'] > 0 ? 'is-refund' : '' ?>"><span>Refunded</span><strong><?= money($cancellation['refunded_amount']) ?></strong></div>
+        <div><span>Gross Payment Received</span><strong><?= money($cancellation['paid_before_cancellation']) ?></strong></div>
+        <div><span>Refund Required</span><strong><?= money($cancellation['refund_due']) ?></strong></div>
+        <div class="<?= (float)$cancellation['refunded_amount'] > 0 ? 'is-refund' : '' ?>"><span>Refund Recorded</span><strong><?= (float)$cancellation['refunded_amount'] > 0 ? '−' . money($cancellation['refunded_amount']) : money(0) ?></strong></div>
+        <div class="is-net"><span>Net Amount Retained</span><strong><?= money($ledgerTotals['net_paid']) ?></strong></div>
         <div class="<?= $remainingBalance > 0 ? 'is-balance' : '' ?>"><span>Cancellation Balance</span><strong><?= money($remainingBalance) ?></strong></div>
       </div>
       <div class="cancellation-record-reason"><strong>Reason:</strong> <?= nl2br(e((string)$cancellation['cancellation_reason'])) ?><div class="small muted">Cancelled by <?= e($cancellation['cancelled_by_name'] ?: 'Unknown administrator') ?> on <?= date('M j, Y g:i A', strtotime((string)$cancellation['cancelled_at'])) ?>.</div></div>
@@ -470,6 +471,12 @@ include __DIR__ . '/_header.php';
   <details class="panel reservation-detail-collapse" id="payment-history">
     <summary><span><strong>Payment History</strong><small><?= count($payments) ?> transaction<?= count($payments) === 1 ? '' : 's' ?> · <?= e(ucwords(str_replace('_', ' ', (string)$booking['payment_status']))) ?></small></span><span class="reservation-collapse-icon" aria-hidden="true">+</span></summary>
     <div class="reservation-detail-collapse-body">
+      <div class="payment-ledger-summary<?= $ledgerTotals['refunded'] > 0 ? ' has-refund' : '' ?>" aria-label="Payment ledger totals">
+        <div><span>Gross Payments</span><strong><?= money($ledgerTotals['gross_paid']) ?></strong></div>
+        <div class="payment-ledger-refund"><span>Refunds</span><strong><?= $ledgerTotals['refunded'] > 0 ? '−' . money($ledgerTotals['refunded']) : money(0) ?></strong></div>
+        <div class="payment-ledger-net"><span>Net Collected</span><strong><?= money($ledgerTotals['net_paid']) ?></strong></div>
+      </div>
+      <?php if ($ledgerTotals['refunded'] > 0): ?><p class="payment-ledger-note">Refunds are stored as negative transactions. Original payments remain unchanged for a complete audit trail.</p><?php endif; ?>
       <div class="table-wrap"><table class="admin-table mobile-card-table reservation-payment-history-table"><thead><tr><th>Date</th><th>Type</th><th>Method</th><th>Reference</th><th>Recorded By</th><th>Amount</th></tr></thead><tbody>
       <?php foreach ($payments as $payment): $isRefund = payment_transaction_type($payment) === 'refund'; ?><tr class="<?= $isRefund ? 'payment-refund-row' : '' ?>"><td data-label="Date"><?= date('M j, Y g:i A', strtotime($payment['paid_at'])) ?></td><td data-label="Type"><span class="status-pill status-<?= $isRefund ? 'warning' : 'success' ?>"><?= e(payment_transaction_label($payment)) ?></span></td><td data-label="Method"><?= e(booking_payment_method_label((string)$payment['payment_method'])) ?></td><td data-label="Reference"><?= e($payment['payment_reference'] ?: '—') ?><?php if (!empty($payment['batch_payment_no'])): ?><br><a class="small batch-reference-link" href="batch-reservation-view.php?id=<?= (int)$payment['payment_batch_id'] ?>#batch-payment-history">Batch <?= e($payment['batch_payment_no']) ?></a><?php endif; ?></td><td data-label="Recorded By"><?= e($payment['recorder'] ?: 'Client online submission') ?></td><td data-label="Amount"><strong class="<?= $isRefund ? 'refund-amount' : '' ?>"><?= $isRefund ? '−' . money(abs((float)$payment['amount'])) : money($payment['amount']) ?></strong></td></tr><?php endforeach; ?>
       <?php if (!$payments): ?><tr><td colspan="6" class="empty-state">No payments recorded.</td></tr><?php endif; ?>
