@@ -253,7 +253,7 @@ include __DIR__ . '/_header.php';
           <option value="calendar_viewer">Calendar Viewer (Read Only)</option>
           <option value="admin">Administrator</option>
         </select>
-        <span class="field-help">Calendar Viewer accounts can sign in and view only the Booking Calendar. They cannot create, edit, approve, cancel, or record payments.</span>
+        <span class="field-help">Calendar Viewer accounts can sign in and view the Booking Calendar and Rental Calendar only. They cannot create, edit, approve, cancel, extend, or record payments.</span>
       </div>
       <button class="btn btn-primary btn-block" type="submit">Create Account</button>
     </form>

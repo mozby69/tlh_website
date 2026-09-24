@@ -516,12 +516,7 @@ include __DIR__ . '/_header.php';
             <button type="button" data-open-batch-details>View Batch Details</button>
             <button type="button" data-open-batch-history>View Payment History</button>
             <?php if (is_admin()): ?>
-              <form method="post" action="batch-reservation-delete.php" onsubmit="return confirm('Permanently delete batch <?= e($batch['batch_reference']) ?> and all <?= count($items) ?> connected reservation date<?= count($items) === 1 ? '' : 's' ?>? This cannot be undone. Batches with payment history will be protected and cannot be deleted.');">
-                <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-                <input type="hidden" name="batch_id" value="<?= (int)$batchId ?>">
-                <input type="hidden" name="return_to" value="reservations.php?view=batches">
-                <button class="is-danger" type="submit">Delete batch permanently</button>
-              </form>
+              <a class="is-danger" href="batch-reservation-delete.php?id=<?= (int)$batchId ?>&amp;return_to=<?= rawurlencode('reservations.php?view=batches') ?>">Delete batch permanently</a>
             <?php endif; ?>
           </div>
         </details>

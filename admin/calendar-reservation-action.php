@@ -18,6 +18,10 @@ function calendar_action_response(bool $ok, string $message, array $extra = [], 
     exit;
 }
 
+if (is_calendar_viewer()) {
+    calendar_action_response(false, 'This account has read-only Calendar access.', [], 403);
+}
+
 function calendar_action_booking_payload(array $booking): array
 {
     $target = reservation_payment_target($booking);
@@ -48,6 +52,7 @@ function calendar_action_booking_payload(array $booking): array
         'status_label' => ucwords(str_replace('_', ' ', $status)),
         'status_class' => badge_class($status),
         'holds_calendar' => reservation_holds_calendar($booking),
+        'has_ended' => $hasEnded,
         'calendar_hold' => $needsResolution ? 'Needs resolution · Event time passed while Pending' : ($hasEnded ? ($canLateExtend ? 'Event time passed · Late Extension available' : 'Event time passed · Operational changes locked') : (reservation_holds_calendar($booking) ? 'Schedule secured' : 'Pending / inactive · Not holding slot')),
         'payment_status' => ucfirst($paymentStatus),
         'payment_status_class' => badge_class($paymentStatus),

@@ -1,0 +1,7 @@
+TLH v1.3.10
+
+Calendar Viewer update:
+- Calendar Viewer accounts can now access both Booking Calendar and Rental Calendar.
+- Rental Calendar is read-only for Calendar Viewer accounts.
+- Rental entries do not link to editable rental records for Calendar Viewer accounts.
+- Rental Records and New Rental actions remain hidden/restricted.

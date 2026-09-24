@@ -316,12 +316,7 @@ include __DIR__ . '/_header.php';
               </form>
             <?php endif; ?>
             <?php if (is_admin()): ?>
-              <form method="post" action="reservation-delete.php" onsubmit="return confirm('Permanently delete reservation <?= e($booking['reference_no']) ?>? This cannot be undone. Reservations with payment history will be protected and cannot be deleted.');">
-                <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-                <input type="hidden" name="reservation_id" value="<?= $id ?>">
-                <input type="hidden" name="return_to" value="reservations.php">
-                <button class="is-danger" type="submit">Delete reservation permanently</button>
-              </form>
+              <a class="is-danger" href="reservation-delete.php?id=<?= $id ?>&amp;return_to=<?= e(rawurlencode($bookingIsArchived ? 'archives.php' : ($bookingIsCancelled ? 'cancelled.php' : 'reservations.php'))) ?>">Delete reservation permanently</a>
             <?php endif; ?>
           </div>
         </details><?php endif; ?>

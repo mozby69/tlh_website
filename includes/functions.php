@@ -700,7 +700,7 @@ function reservation_package_for_guests(int $guestCount): ?string
     if ($guestCount >= 30 && $guestCount <= 200) {
         return 'tournament';
     }
-    if ($guestCount >= 201 && $guestCount <= 300) {
+    if ($guestCount >= 201 && $guestCount <= 400) {
         return 'big_event';
     }
     return null;
@@ -711,7 +711,7 @@ function reservation_package_label(?string $package): string
     return match ($package) {
         'regular' => 'Regular Booking',
         'tournament' => 'Tournament (30–200 guests)',
-        'big_event' => 'Big Event (201–300 guests)',
+        'big_event' => 'Big Event (201–400 guests)',
         default => 'Not recorded',
     };
 }
@@ -798,7 +798,7 @@ function calculate_reservation_pricing(
     $hours = $seconds / 3600;
     $package = reservation_package_for_guests($guestCount);
     if ($package === null) {
-        throw new InvalidArgumentException('Guest count must be between 1 and 300 guests.');
+        throw new InvalidArgumentException('Guest count must be between 1 and 400 guests.');
     }
     if (!array_key_exists($coolingOption, reservation_cooling_options())) {
         throw new InvalidArgumentException('Choose either Fan with Lights or Aircon with Lights.');
@@ -1980,6 +1980,8 @@ function admin_required(): void
             $currentScript = basename((string)($_SERVER['PHP_SELF'] ?? ''));
             $calendarViewerAllowed = [
                 'booking-calendar.php',
+                'rental-calendar.php',
+                'rental-view-readonly.php',
                 'calendar-reservation-action.php',
                 'logout.php',
             ];
@@ -3312,6 +3314,887 @@ function ensure_v12138_schema(): void
     }
 }
 
+
+
+/**
+ * v1.2.141 adds Admin-only Food Stall Rentals. Stall spaces intentionally do
+ * not store a default price; every rental keeps the manually agreed amount.
+ */
+function ensure_v12141_schema(): void
+{
+    static $done = false;
+    if ($done) return;
+    $done = true;
+
+    try {
+        $pdo = db();
+        $pdo->exec("CREATE TABLE IF NOT EXISTS food_stalls (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            stall_code VARCHAR(60) NOT NULL,
+            stall_name VARCHAR(120) NULL,
+            location VARCHAR(160) NULL,
+            notes TEXT NULL,
+            is_active TINYINT(1) NOT NULL DEFAULT 1,
+            created_by INT UNSIGNED NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_food_stall_code (stall_code),
+            KEY idx_food_stall_active (is_active),
+            CONSTRAINT fk_food_stall_admin FOREIGN KEY (created_by) REFERENCES admins(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS food_stall_rentals (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            reference_no VARCHAR(40) NOT NULL,
+            stall_id INT UNSIGNED NOT NULL,
+            tenant_name VARCHAR(160) NOT NULL,
+            contact_number VARCHAR(50) NULL,
+            organization VARCHAR(160) NULL,
+            start_date DATE NOT NULL,
+            end_date DATE NOT NULL,
+            rental_amount DECIMAL(12,2) NOT NULL,
+            amount_paid DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+            payment_status ENUM('unpaid','partial','paid') NOT NULL DEFAULT 'unpaid',
+            status ENUM('active','completed','cancelled') NOT NULL DEFAULT 'active',
+            notes TEXT NULL,
+            cancelled_reason VARCHAR(255) NULL,
+            completed_at DATETIME NULL,
+            created_by INT UNSIGNED NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_food_stall_rental_reference (reference_no),
+            KEY idx_food_stall_rental_stall_dates (stall_id,start_date,end_date),
+            KEY idx_food_stall_rental_status (status,start_date,end_date),
+            CONSTRAINT fk_food_stall_rental_stall FOREIGN KEY (stall_id) REFERENCES food_stalls(id) ON DELETE RESTRICT,
+            CONSTRAINT fk_food_stall_rental_admin FOREIGN KEY (created_by) REFERENCES admins(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS food_stall_payments (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            rental_id BIGINT UNSIGNED NOT NULL,
+            transaction_type VARCHAR(20) NOT NULL DEFAULT 'payment',
+            amount DECIMAL(12,2) NOT NULL,
+            payment_method VARCHAR(80) NOT NULL,
+            payment_reference VARCHAR(120) NULL,
+            notes TEXT NULL,
+            recorded_by INT UNSIGNED NULL,
+            paid_at DATETIME NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_food_stall_payment_rental (rental_id,paid_at),
+            KEY idx_food_stall_payment_admin (recorded_by),
+            CONSTRAINT fk_food_stall_payment_rental FOREIGN KEY (rental_id) REFERENCES food_stall_rentals(id) ON DELETE CASCADE,
+            CONSTRAINT fk_food_stall_payment_admin FOREIGN KEY (recorded_by) REFERENCES admins(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (Throwable $e) {
+        // Existing compatible databases need no change. If CREATE is blocked,
+        // the module will show its normal database error instead of altering data.
+    }
+}
+
+
+/**
+ * v1.2.143 adds post-rental final billing for Food Stall Rentals.
+ * Electricity and water are entered by Admin only after the rental period.
+ */
+function ensure_v12143_schema(): void
+{
+    static $done = false;
+    if ($done) return;
+    $done = true;
+
+    try {
+        $pdo = db();
+        $columnStmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='food_stall_rentals' AND COLUMN_NAME=?");
+        $columns = [
+            'electricity_amount' => "DECIMAL(12,2) NOT NULL DEFAULT 0.00 AFTER rental_amount",
+            'water_amount' => "DECIMAL(12,2) NOT NULL DEFAULT 0.00 AFTER electricity_amount",
+            'final_billing_notes' => "TEXT NULL AFTER water_amount",
+            'final_billed_at' => "DATETIME NULL AFTER final_billing_notes",
+            'final_billed_by' => "INT UNSIGNED NULL AFTER final_billed_at",
+        ];
+        foreach ($columns as $name => $definition) {
+            $columnStmt->execute([$name]);
+            if ((int)$columnStmt->fetchColumn() === 0) {
+                $pdo->exec("ALTER TABLE food_stall_rentals ADD COLUMN $name $definition");
+            }
+        }
+    } catch (Throwable $e) {
+        // If ALTER is temporarily blocked, the lightweight migration retries on the next request.
+    }
+}
+
+
+/**
+ * v1.2.145 adds early termination tracking for Food Stall Rentals.
+ * The original end date is preserved while end_date becomes the actual final
+ * occupied date so future stall availability is released correctly.
+ */
+function ensure_v12145_schema(): void
+{
+    static $done = false;
+    if ($done) return;
+    $done = true;
+
+    try {
+        $pdo = db();
+        $columnStmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='food_stall_rentals' AND COLUMN_NAME=?");
+        $columns = [
+            'original_end_date' => "DATE NULL AFTER end_date",
+            'early_end_reason' => "VARCHAR(255) NULL AFTER original_end_date",
+            'early_ended_at' => "DATETIME NULL AFTER early_end_reason",
+            'early_ended_by' => "INT UNSIGNED NULL AFTER early_ended_at",
+        ];
+        foreach ($columns as $name => $definition) {
+            $columnStmt->execute([$name]);
+            if ((int)$columnStmt->fetchColumn() === 0) {
+                $pdo->exec("ALTER TABLE food_stall_rentals ADD COLUMN $name $definition");
+            }
+        }
+    } catch (Throwable $e) {
+        // If ALTER is temporarily blocked, the lightweight migration retries on the next request.
+    }
+}
+
+/**
+ * v1.2.148 adds flexible-date schedules for Food Stall Rentals.
+ * Existing rentals remain continuous. Flexible rentals keep one financial
+ * agreement while individual occupied dates are stored separately.
+ */
+function ensure_v12148_schema(): void
+{
+    static $done = false;
+    if ($done) return;
+    $done = true;
+
+    try {
+        $pdo = db();
+        $columnStmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='food_stall_rentals' AND COLUMN_NAME='schedule_type'");
+        $columnStmt->execute();
+        if ((int)$columnStmt->fetchColumn() === 0) {
+            $pdo->exec("ALTER TABLE food_stall_rentals ADD COLUMN schedule_type VARCHAR(20) NOT NULL DEFAULT 'continuous' AFTER organization");
+        }
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS food_stall_rental_dates (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            rental_id BIGINT UNSIGNED NOT NULL,
+            rental_date DATE NOT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'scheduled',
+            released_at DATETIME NULL,
+            released_by INT UNSIGNED NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_food_stall_rental_date (rental_id,rental_date),
+            KEY idx_food_stall_rental_dates_date (rental_date,status),
+            KEY idx_food_stall_rental_dates_rental (rental_id,status,rental_date),
+            CONSTRAINT fk_food_stall_rental_date_rental FOREIGN KEY (rental_id) REFERENCES food_stall_rentals(id) ON DELETE CASCADE,
+            CONSTRAINT fk_food_stall_rental_date_admin FOREIGN KEY (released_by) REFERENCES admins(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (Throwable $e) {
+        // Existing compatible databases need no change. Older sites retry automatically.
+    }
+}
+
+/**
+ * v1.2.154 adds an audit trail for Food Stall Rental extensions.
+ */
+function ensure_v12154_schema(): void
+{
+    static $done = false;
+    if ($done) return;
+    $done = true;
+
+    try {
+        $pdo = db();
+        $pdo->exec("CREATE TABLE IF NOT EXISTS food_stall_rental_extensions (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            rental_id BIGINT UNSIGNED NOT NULL,
+            schedule_type VARCHAR(20) NOT NULL DEFAULT 'continuous',
+            previous_end_date DATE NOT NULL,
+            new_end_date DATE NOT NULL,
+            previous_rental_amount DECIMAL(12,2) NOT NULL,
+            new_rental_amount DECIMAL(12,2) NOT NULL,
+            added_dates TEXT NULL,
+            reason VARCHAR(1000) NOT NULL,
+            extended_by INT UNSIGNED NULL,
+            extended_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_food_stall_extension_rental (rental_id,extended_at),
+            KEY idx_food_stall_extension_admin (extended_by),
+            CONSTRAINT fk_food_stall_extension_rental FOREIGN KEY (rental_id) REFERENCES food_stall_rentals(id) ON DELETE CASCADE,
+            CONSTRAINT fk_food_stall_extension_admin FOREIGN KEY (extended_by) REFERENCES admins(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (Throwable $e) {
+        // Existing compatible databases need no change. Older sites retry automatically.
+    }
+}
+
+/**
+ * v1.2.158 adds explicit Complimentary / Free Rental audit fields.
+ */
+function ensure_v12158_schema(): void
+{
+    static $done = false;
+    if ($done) return;
+    $done = true;
+
+    try {
+        $pdo = db();
+        $columnStmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='food_stall_rentals' AND COLUMN_NAME=?");
+        $columns = [
+            'is_complimentary' => "TINYINT(1) NOT NULL DEFAULT 0 AFTER rental_amount",
+            'complimentary_reason' => "VARCHAR(1000) NULL AFTER is_complimentary",
+            'complimentary_by' => "INT UNSIGNED NULL AFTER complimentary_reason",
+            'complimentary_at' => "DATETIME NULL AFTER complimentary_by",
+        ];
+        foreach ($columns as $name => $definition) {
+            $columnStmt->execute([$name]);
+            if ((int)$columnStmt->fetchColumn() === 0) {
+                $pdo->exec("ALTER TABLE food_stall_rentals ADD COLUMN $name $definition");
+            }
+        }
+        try {
+            $indexStmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='food_stall_rentals' AND INDEX_NAME='idx_food_stall_complimentary'");
+            $indexStmt->execute();
+            if ((int)$indexStmt->fetchColumn() === 0) {
+                $pdo->exec("ALTER TABLE food_stall_rentals ADD KEY idx_food_stall_complimentary (is_complimentary)");
+            }
+        } catch (Throwable $ignore) {}
+    } catch (Throwable $e) {
+        // Existing compatible databases need no change. Older sites retry automatically.
+    }
+}
+
+function food_stall_is_complimentary(array $rental): bool
+{
+    return (int)($rental['is_complimentary'] ?? 0) === 1;
+}
+
+function food_stall_rental_dates(int $rentalId, bool $includeReleased = true): array
+{
+    if ($rentalId <= 0) return [];
+    $sql = 'SELECT * FROM food_stall_rental_dates WHERE rental_id=?';
+    if (!$includeReleased) $sql .= " AND status='scheduled'";
+    $sql .= ' ORDER BY rental_date,id';
+    try {
+        $stmt = db()->prepare($sql);
+        $stmt->execute([$rentalId]);
+        return $stmt->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function food_stall_rental_conflicts_for_dates(int $stallId, array $dates, int $excludeId = 0): array
+{
+    if ($stallId <= 0) return [];
+    $normalized = [];
+    foreach ($dates as $date) {
+        $date = trim((string)$date);
+        $parsed = DateTimeImmutable::createFromFormat('!Y-m-d', $date);
+        if ($parsed && $parsed->format('Y-m-d') === $date) $normalized[$date] = $date;
+    }
+    ksort($normalized);
+    if (!$normalized) return [];
+
+    $sql = "SELECT r.id,r.reference_no,r.tenant_name,r.start_date,r.end_date,r.schedule_type
+            FROM food_stall_rentals r
+            WHERE r.stall_id=? AND r.status<>'cancelled'
+              AND (
+                    (COALESCE(r.schedule_type,'continuous')<>'flexible' AND r.start_date<=? AND r.end_date>=?)
+                    OR
+                    (COALESCE(r.schedule_type,'continuous')='flexible' AND EXISTS (
+                        SELECT 1 FROM food_stall_rental_dates d
+                        WHERE d.rental_id=r.id AND d.rental_date=? AND d.status='scheduled'
+                    ))
+              )";
+    if ($excludeId > 0) $sql .= ' AND r.id<>?';
+    $sql .= ' ORDER BY r.start_date,r.id LIMIT 1';
+    $stmt = db()->prepare($sql);
+    $conflicts = [];
+    foreach ($normalized as $date) {
+        $params = [$stallId, $date, $date, $date];
+        if ($excludeId > 0) $params[] = $excludeId;
+        $stmt->execute($params);
+        if ($row = $stmt->fetch()) {
+            $row['conflict_date'] = $date;
+            $conflicts[] = $row;
+        }
+    }
+    return $conflicts;
+}
+
+function food_stall_rental_reference(): string
+{
+    do {
+        $reference = 'FSR-' . date('ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
+        $stmt = db()->prepare('SELECT COUNT(*) FROM food_stall_rentals WHERE reference_no=?');
+        $stmt->execute([$reference]);
+    } while ((int)$stmt->fetchColumn() > 0);
+    return $reference;
+}
+
+function food_stall_rental_lifecycle(array $rental): string
+{
+    $status = (string)($rental['status'] ?? 'active');
+    if ($status === 'cancelled') return 'Cancelled';
+    if ($status === 'completed') return 'Completed';
+    if (!empty($rental['early_ended_at'])) return 'For Final Billing';
+    $today = date('Y-m-d');
+    $start = (string)($rental['start_date'] ?? '');
+    $end = (string)($rental['end_date'] ?? '');
+    if ($start !== '' && $start > $today) return 'Upcoming';
+    if (($rental['billing_mode'] ?? '') === 'monthly') {
+        if ($end !== '' && $end < $today) return 'Expired';
+        if ($end !== '' && $end <= date('Y-m-d', strtotime('+30 days'))) return 'For Renewal';
+    }
+    if ($end !== '' && $end < $today) return 'For Final Billing';
+    return 'Active';
+}
+
+function food_stall_utility_total(array $rental): float
+{
+    return round((float)($rental['electricity_amount'] ?? 0) + (float)($rental['water_amount'] ?? 0), 2);
+}
+
+function food_stall_total_amount(array $rental): float
+{
+    return round((float)($rental['rental_amount'] ?? 0) + food_stall_utility_total($rental), 2);
+}
+
+function food_stall_rental_conflict(int $stallId, string $startDate, string $endDate, int $excludeId = 0): ?array
+{
+    if ($stallId <= 0 || $startDate === '' || $endDate === '') return null;
+    $sql = "SELECT r.id,r.reference_no,r.tenant_name,r.start_date,r.end_date,r.schedule_type,
+                   (SELECT MIN(d.rental_date) FROM food_stall_rental_dates d
+                     WHERE d.rental_id=r.id AND d.status='scheduled' AND d.rental_date BETWEEN ? AND ?) AS conflict_date
+            FROM food_stall_rentals r
+            WHERE r.stall_id=? AND r.status<>'cancelled'
+              AND (
+                    (COALESCE(r.schedule_type,'continuous')<>'flexible' AND r.start_date<=? AND r.end_date>=?)
+                    OR
+                    (COALESCE(r.schedule_type,'continuous')='flexible' AND EXISTS (
+                        SELECT 1 FROM food_stall_rental_dates d2
+                        WHERE d2.rental_id=r.id AND d2.status='scheduled' AND d2.rental_date BETWEEN ? AND ?
+                    ))
+              )";
+    $params = [$startDate, $endDate, $stallId, $endDate, $startDate, $startDate, $endDate];
+    if ($excludeId > 0) {
+        $sql .= ' AND r.id<>?';
+        $params[] = $excludeId;
+    }
+    $sql .= ' ORDER BY r.start_date LIMIT 1';
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+    $row = $stmt->fetch();
+    return $row ?: null;
+}
+
+function food_stall_payment_total(int $rentalId): float
+{
+    $stmt = db()->prepare('SELECT COALESCE(SUM(amount),0) FROM food_stall_payments WHERE rental_id=?');
+    $stmt->execute([$rentalId]);
+    return round((float)$stmt->fetchColumn(), 2);
+}
+
+/**
+ * v1.3.0 introduces the generic Rentals engine. Existing Food Stall records are
+ * copied once into the new structure and remain preserved in the legacy tables.
+ */
+function ensure_v1300_schema(): void
+{
+    static $done = false;
+    if ($done) return;
+    $done = true;
+
+    try {
+        $pdo = db();
+        $exists = $pdo->query("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('rental_categories','rentables','rentals','rental_items','rental_dates','rental_payments','rental_deposit_transactions','rental_extensions','rental_charge_types','rental_billing_periods','rental_charges')");
+        $rentalTableCount = (int)$exists->fetchColumn();
+        $markerStmt = $pdo->prepare("SELECT setting_value FROM site_settings WHERE setting_key='schema_v1300_complete' LIMIT 1");
+        $markerStmt->execute();
+        if ($rentalTableCount === 11 && (string)$markerStmt->fetchColumn() === '1') return;
+        if ($rentalTableCount < 11) {
+            $sql = @file_get_contents(__DIR__ . '/../database/upgrade_v1.3.0_generic_rentals.sql');
+            if ($sql === false) return;
+            $sql = preg_replace('/^\s*--.*$/m', '', $sql);
+            foreach (preg_split('/;\s*(?:\r?\n|$)/', (string)$sql) as $statement) {
+                $statement = trim($statement);
+                if ($statement !== '') $pdo->exec($statement);
+            }
+        }
+
+        $depositCol = $pdo->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='rentals' AND COLUMN_NAME='security_deposit_required'");
+        $depositCol->execute();
+        if ((int)$depositCol->fetchColumn() === 0) {
+            $pdo->exec("ALTER TABLE rentals ADD COLUMN security_deposit_required DECIMAL(12,2) NOT NULL DEFAULT 0.00 AFTER payment_status");
+        }
+
+        $seedCategory = $pdo->prepare("INSERT INTO rental_categories(name,slug,category_type,default_availability_mode,default_billing_mode,allow_flexible_dates,allow_utilities,is_active,sort_order)
+            VALUES(?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE name=VALUES(name)");
+        $seedCategory->execute(['Food Stall','food-stall','space','exclusive','one_time',1,1,1,10]);
+        $seedCategory->execute(['Commercial Space','commercial-space','space','exclusive','monthly',0,1,1,20]);
+        $seedCategory->execute(['Equipment / Item','equipment-item','equipment','quantity','one_time',1,0,1,30]);
+        $seedCategory->execute(['Other Rentable','other-rentable','other','exclusive','one_time',1,0,1,40]);
+
+        $seedCharge = $pdo->prepare("INSERT INTO rental_charge_types(code,name,is_active,sort_order) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE name=VALUES(name)");
+        $seedCharge->execute(['electricity','Electricity',1,10]);
+        $seedCharge->execute(['water','Water',1,20]);
+        $seedCharge->execute(['extension','Extension Charge',1,30]);
+        $seedCharge->execute(['adjustment','Adjustment',1,80]);
+        $seedCharge->execute(['other','Other Charge',1,90]);
+
+        $legacyCount = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('food_stalls','food_stall_rentals','food_stall_rental_dates','food_stall_payments','food_stall_rental_extensions')")->fetchColumn();
+        if ($legacyCount > 0 && $legacyCount < 5) {
+            throw new RuntimeException('Legacy Food Stall rental schema is incomplete; generic rental migration was not marked complete.');
+        }
+        if ($legacyCount === 5) {
+        // Migrate existing Food Stall spaces into the generic catalog.
+        $pdo->exec("INSERT INTO rentables(category_id,code,name,location,availability_mode,total_quantity,billing_mode,allow_flexible_dates,allow_utilities,notes,is_active,legacy_food_stall_id,created_by,created_at,updated_at)
+            SELECT c.id,s.stall_code,COALESCE(NULLIF(s.stall_name,''),s.stall_code),s.location,'exclusive',1,'one_time',1,1,s.notes,s.is_active,s.id,s.created_by,s.created_at,s.updated_at
+            FROM food_stalls s JOIN rental_categories c ON c.slug='food-stall'
+            LEFT JOIN rentables x ON x.legacy_food_stall_id=s.id
+            WHERE x.id IS NULL");
+
+        // Migrate Food Stall rental headers.
+        $pdo->exec("INSERT INTO rentals(reference_no,client_name,contact_number,organization,schedule_type,billing_mode,start_date,end_date,base_amount,amount_paid,payment_status,status,is_complimentary,complimentary_reason,complimentary_by,complimentary_at,final_billing_notes,final_billed_at,final_billed_by,original_end_date,early_end_reason,early_ended_at,early_ended_by,notes,cancelled_reason,completed_at,legacy_food_stall_rental_id,created_by,created_at,updated_at)
+            SELECT f.reference_no,f.tenant_name,f.contact_number,f.organization,COALESCE(f.schedule_type,'continuous'),'one_time',f.start_date,f.end_date,f.rental_amount,f.amount_paid,f.payment_status,f.status,
+                   COALESCE(f.is_complimentary,0),f.complimentary_reason,f.complimentary_by,f.complimentary_at,f.final_billing_notes,f.final_billed_at,f.final_billed_by,
+                   f.original_end_date,f.early_end_reason,f.early_ended_at,f.early_ended_by,f.notes,f.cancelled_reason,f.completed_at,f.id,f.created_by,f.created_at,f.updated_at
+            FROM food_stall_rentals f LEFT JOIN rentals r ON r.legacy_food_stall_rental_id=f.id
+            WHERE r.id IS NULL");
+
+        // Each migrated Food Stall rental becomes one generic rental item.
+        $pdo->exec("INSERT INTO rental_items(rental_id,rentable_id,quantity,agreed_amount)
+            SELECT r.id,x.id,1,f.rental_amount
+            FROM food_stall_rentals f
+            JOIN rentals r ON r.legacy_food_stall_rental_id=f.id
+            JOIN rentables x ON x.legacy_food_stall_id=f.stall_id
+            LEFT JOIN rental_items ri ON ri.rental_id=r.id AND ri.rentable_id=x.id
+            WHERE ri.id IS NULL");
+
+        $pdo->exec("INSERT IGNORE INTO rental_dates(rental_id,rental_date,status,released_at,released_by,created_at)
+            SELECT r.id,d.rental_date,d.status,d.released_at,d.released_by,d.created_at
+            FROM food_stall_rental_dates d JOIN rentals r ON r.legacy_food_stall_rental_id=d.rental_id");
+
+        $pdo->exec("INSERT INTO rental_payments(rental_id,transaction_type,amount,payment_method,payment_reference,notes,recorded_by,paid_at,legacy_food_stall_payment_id,created_at)
+            SELECT r.id,p.transaction_type,p.amount,p.payment_method,p.payment_reference,p.notes,p.recorded_by,p.paid_at,p.id,p.created_at
+            FROM food_stall_payments p JOIN rentals r ON r.legacy_food_stall_rental_id=p.rental_id
+            LEFT JOIN rental_payments rp ON rp.legacy_food_stall_payment_id=p.id
+            WHERE rp.id IS NULL");
+
+        $pdo->exec("INSERT INTO rental_extensions(rental_id,schedule_type,previous_end_date,new_end_date,previous_rental_amount,new_rental_amount,added_dates,reason,extended_by,extended_at,legacy_food_stall_extension_id)
+            SELECT r.id,e.schedule_type,e.previous_end_date,e.new_end_date,e.previous_rental_amount,e.new_rental_amount,e.added_dates,e.reason,e.extended_by,e.extended_at,e.id
+            FROM food_stall_rental_extensions e JOIN rentals r ON r.legacy_food_stall_rental_id=e.rental_id
+            LEFT JOIN rental_extensions re ON re.legacy_food_stall_extension_id=e.id
+            WHERE re.id IS NULL");
+
+        $electricityId = (int)$pdo->query("SELECT id FROM rental_charge_types WHERE code='electricity' LIMIT 1")->fetchColumn();
+        $waterId = (int)$pdo->query("SELECT id FROM rental_charge_types WHERE code='water' LIMIT 1")->fetchColumn();
+        if ($electricityId > 0) {
+            $stmt = $pdo->prepare("INSERT IGNORE INTO rental_charges(rental_id,charge_type_id,description,amount,charged_at,created_by,legacy_source)
+                SELECT r.id,?,'Final Electricity Charge',COALESCE(f.electricity_amount,0),COALESCE(f.final_billed_at,f.updated_at),f.final_billed_by,CONCAT('food-stall-electricity-',f.id)
+                FROM food_stall_rentals f JOIN rentals r ON r.legacy_food_stall_rental_id=f.id
+                WHERE COALESCE(f.electricity_amount,0)<>0 OR f.final_billed_at IS NOT NULL");
+            $stmt->execute([$electricityId]);
+        }
+        if ($waterId > 0) {
+            $stmt = $pdo->prepare("INSERT IGNORE INTO rental_charges(rental_id,charge_type_id,description,amount,charged_at,created_by,legacy_source)
+                SELECT r.id,?,'Final Water Charge',COALESCE(f.water_amount,0),COALESCE(f.final_billed_at,f.updated_at),f.final_billed_by,CONCAT('food-stall-water-',f.id)
+                FROM food_stall_rentals f JOIN rentals r ON r.legacy_food_stall_rental_id=f.id
+                WHERE COALESCE(f.water_amount,0)<>0 OR f.final_billed_at IS NOT NULL");
+            $stmt->execute([$waterId]);
+        }
+        }
+        $markerWrite = $pdo->prepare("INSERT INTO site_settings(setting_key,setting_value) VALUES('schema_v1300_complete','1') ON DUPLICATE KEY UPDATE setting_value='1'");
+        $markerWrite->execute();
+    } catch (Throwable $e) {
+        error_log('TLH v1.3 rental schema migration failed: ' . $e->getMessage());
+        // Keep legacy reservation functionality available; rental pages will surface missing-schema errors if needed.
+    }
+}
+
+
+/**
+ * v1.3.6 adds flexible rental cancellation settlements. A cancelled rental can
+ * keep any amount the administrator decides while any approved refund is
+ * recorded as a negative rental payment for a complete audit trail.
+ */
+function ensure_v1360_schema(): void
+{
+    static $done = false;
+    if ($done) return;
+    $done = true;
+
+    try {
+        $pdo = db();
+        $exists = $pdo->prepare("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='rental_cancellations'");
+        $exists->execute();
+        $markerStmt = $pdo->prepare("SELECT setting_value FROM site_settings WHERE setting_key='schema_v1360_complete' LIMIT 1");
+        $markerStmt->execute();
+        if ((int)$exists->fetchColumn() === 1 && (string)$markerStmt->fetchColumn() === '1') return;
+
+        $sql = @file_get_contents(__DIR__ . '/../database/upgrade_v1.3.6_rental_cancellations.sql');
+        if ($sql === false) throw new RuntimeException('Rental cancellation migration file is missing.');
+        $sql = preg_replace('/^\s*--.*$/m', '', $sql);
+        foreach (preg_split('/;\s*(?:\r?\n|$)/', (string)$sql) as $statement) {
+            $statement = trim($statement);
+            if ($statement !== '') $pdo->exec($statement);
+        }
+        $markerWrite = $pdo->prepare("INSERT INTO site_settings(setting_key,setting_value) VALUES('schema_v1360_complete','1') ON DUPLICATE KEY UPDATE setting_value='1'");
+        $markerWrite->execute();
+    } catch (Throwable $e) {
+        error_log('TLH v1.3.6 rental cancellation migration failed: ' . $e->getMessage());
+    }
+}
+
+function rental_cancellation_for(int $rentalId): ?array
+{
+    if ($rentalId <= 0) return null;
+    try {
+        $stmt = db()->prepare("SELECT c.*,a.full_name AS cancelled_by_name,p.paid_at AS refund_paid_at
+            FROM rental_cancellations c
+            LEFT JOIN admins a ON a.id=c.cancelled_by
+            LEFT JOIN rental_payments p ON p.id=c.refund_payment_id
+            WHERE c.rental_id=? LIMIT 1");
+        $stmt->execute([$rentalId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+function rental_availability_lock_acquire(int $timeoutSeconds = 10): bool
+{
+    $stmt = db()->prepare("SELECT GET_LOCK('tlh_rental_availability', ?)");
+    $stmt->execute([max(0, $timeoutSeconds)]);
+    return (int)$stmt->fetchColumn() === 1;
+}
+
+function rental_availability_lock_release(): void
+{
+    try {
+        db()->query("SELECT RELEASE_LOCK('tlh_rental_availability')");
+    } catch (Throwable $e) {
+        // The connection will release named locks when the request ends.
+    }
+}
+
+function rental_record_lock_acquire(int $rentalId, int $timeoutSeconds = 10): bool
+{
+    if ($rentalId <= 0) return false;
+    $name = 'tlh_rental_record_' . $rentalId;
+    $stmt = db()->prepare('SELECT GET_LOCK(?, ?)');
+    $stmt->execute([$name, max(0, $timeoutSeconds)]);
+    return (int)$stmt->fetchColumn() === 1;
+}
+
+function rental_record_lock_release(int $rentalId): void
+{
+    if ($rentalId <= 0) return;
+    try {
+        $stmt = db()->prepare('SELECT RELEASE_LOCK(?)');
+        $stmt->execute(['tlh_rental_record_' . $rentalId]);
+    } catch (Throwable $e) {
+        // The connection will release named locks when the request ends.
+    }
+}
+
+function rental_reference(): string
+{
+    do {
+        $reference = 'RNT-' . date('ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
+        $stmt = db()->prepare('SELECT COUNT(*) FROM rentals WHERE reference_no=?');
+        $stmt->execute([$reference]);
+    } while ((int)$stmt->fetchColumn() > 0);
+    return $reference;
+}
+
+function rental_by_id(int $rentalId): ?array
+{
+    if ($rentalId <= 0) return null;
+    $stmt = db()->prepare('SELECT * FROM rentals WHERE id=?');
+    $stmt->execute([$rentalId]);
+    $row = $stmt->fetch();
+    return $row ?: null;
+}
+
+function rental_items_for(int $rentalId): array
+{
+    if ($rentalId <= 0) return [];
+    $stmt = db()->prepare("SELECT ri.*,x.code,x.name,x.location,x.availability_mode,x.total_quantity,x.billing_mode,x.allow_flexible_dates,x.allow_utilities,c.name AS category_name,c.category_type
+        FROM rental_items ri JOIN rentables x ON x.id=ri.rentable_id JOIN rental_categories c ON c.id=x.category_id
+        WHERE ri.rental_id=? ORDER BY ri.id");
+    $stmt->execute([$rentalId]);
+    return $stmt->fetchAll();
+}
+
+function rental_dates_for(int $rentalId, bool $includeReleased = true): array
+{
+    if ($rentalId <= 0) return [];
+    $sql = 'SELECT * FROM rental_dates WHERE rental_id=?';
+    if (!$includeReleased) $sql .= " AND status='scheduled'";
+    $sql .= ' ORDER BY rental_date,id';
+    $stmt = db()->prepare($sql);
+    $stmt->execute([$rentalId]);
+    return $stmt->fetchAll();
+}
+
+function rental_payments_for(int $rentalId): array
+{
+    $stmt = db()->prepare("SELECT p.*,a.full_name AS recorded_by_name FROM rental_payments p LEFT JOIN admins a ON a.id=p.recorded_by WHERE p.rental_id=? ORDER BY p.paid_at,p.id");
+    $stmt->execute([$rentalId]);
+    return $stmt->fetchAll();
+}
+
+function rental_payment_total(int $rentalId): float
+{
+    $stmt = db()->prepare('SELECT COALESCE(SUM(amount),0) FROM rental_payments WHERE rental_id=?');
+    $stmt->execute([$rentalId]);
+    return round((float)$stmt->fetchColumn(), 2);
+}
+
+function rental_deposit_transactions_for(int $rentalId): array
+{
+    if ($rentalId <= 0) return [];
+    $stmt = db()->prepare("SELECT d.*,a.full_name AS recorded_by_name FROM rental_deposit_transactions d LEFT JOIN admins a ON a.id=d.recorded_by WHERE d.rental_id=? ORDER BY d.transacted_at,d.id");
+    $stmt->execute([$rentalId]);
+    return $stmt->fetchAll();
+}
+
+function rental_deposit_held(int $rentalId): float
+{
+    if ($rentalId <= 0) return 0.0;
+    $stmt = db()->prepare("SELECT COALESCE(SUM(CASE WHEN transaction_type='receipt' THEN amount ELSE -amount END),0) FROM rental_deposit_transactions WHERE rental_id=?");
+    $stmt->execute([$rentalId]);
+    return round(max(0,(float)$stmt->fetchColumn()),2);
+}
+
+function rental_charge_total(int $rentalId, ?int $periodId = null): float
+{
+    $sql = 'SELECT COALESCE(SUM(amount),0) FROM rental_charges WHERE rental_id=?';
+    $params = [$rentalId];
+    if ($periodId !== null) { $sql .= ' AND billing_period_id=?'; $params[] = $periodId; }
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+    return round((float)$stmt->fetchColumn(), 2);
+}
+
+function rental_total_amount(array $rental): float
+{
+    return round((float)($rental['base_amount'] ?? 0) + rental_charge_total((int)($rental['id'] ?? 0)), 2);
+}
+
+function rental_lifecycle(array $rental): string
+{
+    $status = (string)($rental['status'] ?? 'active');
+    if ($status === 'cancelled') return 'Cancelled';
+    if ($status === 'completed') return 'Completed';
+    if (!empty($rental['early_ended_at'])) return 'For Final Billing';
+    $today = date('Y-m-d');
+    $start = (string)($rental['start_date'] ?? '');
+    $end = (string)($rental['end_date'] ?? '');
+    if ($start !== '' && $start > $today) return 'Upcoming';
+    if (($rental['billing_mode'] ?? '') === 'monthly') {
+        if ($end !== '' && $end < $today) return 'Expired';
+        if ($end !== '' && $end <= date('Y-m-d', strtotime('+30 days'))) return 'For Renewal';
+    }
+    if ($end !== '' && $end < $today) return 'For Final Billing';
+    return 'Active';
+}
+
+function rental_item_summary(int $rentalId, int $limit = 3): string
+{
+    $items = rental_items_for($rentalId);
+    if (!$items) return 'No rentable items';
+    $parts = [];
+    foreach (array_slice($items,0,max(1,$limit)) as $item) {
+        $label = (string)$item['code'];
+        if ((int)$item['quantity'] > 1) $label .= ' x'.(int)$item['quantity'];
+        $parts[] = $label;
+    }
+    if (count($items) > $limit) $parts[] = '+'.(count($items)-$limit).' more';
+    return implode(', ', $parts);
+}
+
+function rental_schedule_dates(string $scheduleType, string $startDate, string $endDate, array $flexibleDates = [], int $maxDays = 3660): array
+{
+    if ($scheduleType === 'flexible') {
+        $out = [];
+        foreach ($flexibleDates as $value) {
+            $date = is_array($value) ? (string)($value['rental_date'] ?? '') : (string)$value;
+            $parsed = DateTimeImmutable::createFromFormat('!Y-m-d',$date);
+            if ($parsed && $parsed->format('Y-m-d') === $date) $out[$date] = $date;
+        }
+        ksort($out);
+        return array_values($out);
+    }
+    $start = DateTimeImmutable::createFromFormat('!Y-m-d',$startDate);
+    $end = DateTimeImmutable::createFromFormat('!Y-m-d',$endDate);
+    if (!$start || !$end || $end < $start) return [];
+    $out = [];
+    $cursor = $start;
+    while ($cursor <= $end && count($out) < $maxDays) {
+        $out[] = $cursor->format('Y-m-d');
+        $cursor = $cursor->modify('+1 day');
+    }
+    return $out;
+}
+
+/**
+ * Validate rentable availability against every occupied date. Returns human-readable errors.
+ */
+function rental_availability_errors(array $requestedItems, string $scheduleType, string $startDate, string $endDate, array $flexibleDates = [], int $excludeRentalId = 0): array
+{
+    $dates = rental_schedule_dates($scheduleType,$startDate,$endDate,$flexibleDates);
+    if (!$dates) return ['No valid rental dates were supplied.'];
+    if (count($dates) >= 3660) return ['The rental schedule is too long to validate in one transaction.'];
+    $errors = [];
+    $pdo = db();
+    $rentableStmt = $pdo->prepare("SELECT x.*,c.name AS category_name FROM rentables x JOIN rental_categories c ON c.id=x.category_id WHERE x.id=?");
+    $usedStmt = $pdo->prepare("SELECT COALESCE(SUM(ri.quantity),0) AS used_qty,GROUP_CONCAT(DISTINCT r.reference_no ORDER BY r.id SEPARATOR ', ') AS refs
+        FROM rental_items ri JOIN rentals r ON r.id=ri.rental_id
+        WHERE ri.rentable_id=? AND r.status<>'cancelled' AND r.id<>?
+          AND ((r.schedule_type<>'flexible' AND r.start_date<=? AND r.end_date>=?)
+               OR (r.schedule_type='flexible' AND EXISTS(SELECT 1 FROM rental_dates d WHERE d.rental_id=r.id AND d.status='scheduled' AND d.rental_date=?)))");
+    foreach ($requestedItems as $requested) {
+        $rentableId = (int)($requested['rentable_id'] ?? 0);
+        $quantity = max(1,(int)($requested['quantity'] ?? 1));
+        $rentableStmt->execute([$rentableId]);
+        $rentable = $rentableStmt->fetch();
+        if (!$rentable) { $errors[] = 'One selected rentable no longer exists.'; continue; }
+        $capacity = (string)$rentable['availability_mode'] === 'quantity' ? max(1,(int)$rentable['total_quantity']) : 1;
+        if ($quantity > $capacity) {
+            $errors[] = $rentable['code'].' only has '.$capacity.' available unit'.($capacity===1?'':'s').'.';
+            continue;
+        }
+        foreach ($dates as $date) {
+            $usedStmt->execute([$rentableId,$excludeRentalId,$date,$date,$date]);
+            $row = $usedStmt->fetch() ?: ['used_qty'=>0,'refs'=>null];
+            $used = (int)$row['used_qty'];
+            if ($used + $quantity > $capacity) {
+                $remaining = max(0,$capacity-$used);
+                $errors[] = $rentable['code'].' has only '.$remaining.' unit'.($remaining===1?'':'s').' available on '.date('M j, Y',strtotime($date)).(!empty($row['refs'])?' (conflicts with '.$row['refs'].')':'').'.';
+                break;
+            }
+        }
+    }
+    return $errors;
+}
+
+function rental_next_month_anchor(DateTimeImmutable $date, int $anchorDay): DateTimeImmutable
+{
+    $firstNext = $date->modify('first day of next month');
+    $days = (int)$firstNext->format('t');
+    $day = min(max(1,$anchorDay),$days);
+    return $firstNext->setDate((int)$firstNext->format('Y'),(int)$firstNext->format('m'),$day);
+}
+
+function rental_generate_monthly_periods(int $rentalId, string $startDate, string $endDate, float $monthlyRent): void
+{
+    if ($rentalId <= 0 || $monthlyRent < 0) return;
+    $start = DateTimeImmutable::createFromFormat('!Y-m-d',$startDate);
+    $end = DateTimeImmutable::createFromFormat('!Y-m-d',$endDate);
+    if (!$start || !$end || $end < $start) return;
+    $pdo = db();
+    $pdo->prepare('DELETE FROM rental_billing_periods WHERE rental_id=?')->execute([$rentalId]);
+    $insert = $pdo->prepare('INSERT INTO rental_billing_periods(rental_id,period_no,period_start,period_end,due_date,rent_amount) VALUES(?,?,?,?,?,?)');
+    $cursor = $start;
+    $anchorDay = (int)$start->format('j');
+    $periodNo = 1;
+    while ($cursor <= $end && $periodNo <= 240) {
+        $next = rental_next_month_anchor($cursor,$anchorDay);
+        $periodEnd = $next->modify('-1 day');
+        if ($periodEnd > $end) $periodEnd = $end;
+        $insert->execute([$rentalId,$periodNo,$cursor->format('Y-m-d'),$periodEnd->format('Y-m-d'),$cursor->format('Y-m-d'),round($monthlyRent,2)]);
+        $periodNo++;
+        $cursor = $periodEnd->modify('+1 day');
+    }
+}
+
+function rental_billing_periods(int $rentalId): array
+{
+    $stmt = db()->prepare("SELECT bp.*,
+        COALESCE((SELECT SUM(rc.amount) FROM rental_charges rc WHERE rc.billing_period_id=bp.id),0) AS charge_total
+        FROM rental_billing_periods bp WHERE bp.rental_id=? ORDER BY bp.period_no");
+    $stmt->execute([$rentalId]);
+    return $stmt->fetchAll();
+}
+
+function rental_charge_type_id(string $code): int
+{
+    $stmt = db()->prepare('SELECT id FROM rental_charge_types WHERE code=? LIMIT 1');
+    $stmt->execute([$code]);
+    return (int)$stmt->fetchColumn();
+}
+
+function rental_set_charge(int $rentalId, ?int $periodId, string $code, string $description, float $amount, ?int $adminId = null, ?string $chargedAt = null): void
+{
+    $typeId = rental_charge_type_id($code);
+    if ($typeId <= 0) throw new RuntimeException('Rental charge type is unavailable: '.$code);
+    $pdo = db();
+    if ($periodId === null) {
+        $find = $pdo->prepare('SELECT id FROM rental_charges WHERE rental_id=? AND billing_period_id IS NULL AND charge_type_id=? AND description=? LIMIT 1');
+        $find->execute([$rentalId,$typeId,$description]);
+    } else {
+        $find = $pdo->prepare('SELECT id FROM rental_charges WHERE rental_id=? AND billing_period_id=? AND charge_type_id=? AND description=? LIMIT 1');
+        $find->execute([$rentalId,$periodId,$typeId,$description]);
+    }
+    $id = (int)$find->fetchColumn();
+    if ($id > 0) {
+        $stmt = $pdo->prepare('UPDATE rental_charges SET amount=?,charged_at=?,created_by=? WHERE id=?');
+        $stmt->execute([round($amount,2),$chargedAt?:date('Y-m-d H:i:s'),$adminId,$id]);
+    } else {
+        $stmt = $pdo->prepare('INSERT INTO rental_charges(rental_id,billing_period_id,charge_type_id,description,amount,charged_at,created_by) VALUES(?,?,?,?,?,?,?)');
+        $stmt->execute([$rentalId,$periodId,$typeId,$description,round($amount,2),$chargedAt?:date('Y-m-d H:i:s'),$adminId]);
+    }
+}
+
+function rental_charges_for(int $rentalId): array
+{
+    $stmt = db()->prepare("SELECT rc.*,ct.code AS charge_code,ct.name AS charge_type_name,a.full_name AS created_by_name,bp.period_no,bp.period_start,bp.period_end
+        FROM rental_charges rc JOIN rental_charge_types ct ON ct.id=rc.charge_type_id
+        LEFT JOIN admins a ON a.id=rc.created_by LEFT JOIN rental_billing_periods bp ON bp.id=rc.billing_period_id
+        WHERE rc.rental_id=? ORDER BY COALESCE(bp.period_start,DATE(rc.charged_at)),rc.id");
+    $stmt->execute([$rentalId]);
+    return $stmt->fetchAll();
+}
+
+function rental_recalculate_header(int $rentalId): void
+{
+    $pdo = db();
+    $stmt = $pdo->prepare('SELECT billing_mode FROM rentals WHERE id=?');
+    $stmt->execute([$rentalId]);
+    $billingMode = (string)$stmt->fetchColumn();
+    if ($billingMode === 'monthly') {
+        $sum = $pdo->prepare('SELECT COALESCE(SUM(rent_amount),0) FROM rental_billing_periods WHERE rental_id=?');
+        $sum->execute([$rentalId]);
+        $baseAmount = round((float)$sum->fetchColumn(),2);
+    } else {
+        $sum = $pdo->prepare('SELECT COALESCE(SUM(agreed_amount),0) FROM rental_items WHERE rental_id=?');
+        $sum->execute([$rentalId]);
+        $baseAmount = round((float)$sum->fetchColumn(),2);
+    }
+    $paid = rental_payment_total($rentalId);
+    $charges = rental_charge_total($rentalId);
+    $target = round($baseAmount+$charges,2);
+    $status = payment_status_for_amount($paid,$target);
+    $update = $pdo->prepare('UPDATE rentals SET base_amount=?,amount_paid=?,payment_status=? WHERE id=?');
+    $update->execute([$baseAmount,$paid,$status,$rentalId]);
+}
+
+
 ensure_v1259_schema();
 ensure_v12137_schema();
 ensure_v12138_schema();
+ensure_v12141_schema();
+ensure_v12143_schema();
+ensure_v12145_schema();
+ensure_v12148_schema();
+ensure_v12154_schema();
+ensure_v12158_schema();
+ensure_v1300_schema();
+ensure_v1360_schema();

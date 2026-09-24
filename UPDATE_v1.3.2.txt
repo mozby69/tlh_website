@@ -1,0 +1,13 @@
+TLH v1.3.2
+
+Fixes generic Rentals HTTP 500 errors caused by the v1.3.0/v1.3.1 rental pages querying admins.name. The TLH admins table stores administrator names in admins.full_name.
+
+Affected areas:
+- Rental Details
+- Rental Print
+- Rental payment history
+- Security Deposit history
+- Rental charge history
+- Rental extension history
+
+No database migration is required.

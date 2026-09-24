@@ -938,3 +938,24 @@ html.tlh-login-motion.tlh-login-motion-ready .admin-login-panel-inner{transition
   .payment-ledger-summary{grid-template-columns:1fr 1fr}
   .payment-ledger-summary .payment-ledger-net{grid-column:1/-1}
 }
+
+/* v1.2.140 - password-confirmed destructive reservation delete */
+.reservation-delete-grid{grid-template-columns:minmax(0,820px);justify-content:center}
+.reservation-delete-panel{max-width:820px;width:100%;margin-inline:auto}
+.reservation-delete-warning{margin-bottom:18px}
+.reservation-delete-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 18px}
+.reservation-delete-summary>div{display:flex;flex-direction:column;gap:4px;padding:14px 15px;border:1px solid var(--border,#dce3eb);border-radius:14px;background:var(--surface-soft,#f7f9fc)}
+.reservation-delete-summary span{font-size:.78rem;color:var(--muted,#657083)}
+.reservation-delete-summary strong{font-size:1rem}
+.reservation-delete-summary .reservation-delete-sales-impact{border-color:#f1b2b2;background:#fff5f5}
+.reservation-delete-summary .reservation-delete-sales-impact strong{color:#b42318}
+.reservation-delete-form{margin-top:20px;padding-top:18px;border-top:1px solid var(--border,#dce3eb)}
+.reservation-delete-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:18px}
+@media(max-width:680px){.reservation-delete-summary{grid-template-columns:1fr}.reservation-delete-actions{display:grid;grid-template-columns:1fr}.reservation-delete-actions .btn{width:100%;justify-content:center}}
+
+
+/* v1.2.149 - Admin Food Stall Rental Calendar */
+.rental-calendar-panel{padding:0;overflow:hidden}.rental-calendar-panel-head{padding:22px 24px;margin:0;border-bottom:1px solid var(--line)}.rental-calendar-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:18px 24px;border-bottom:1px solid var(--line);background:#fff}.rental-calendar-toolbar .calendar-month-nav{flex-wrap:wrap}.rental-calendar-toolbar .calendar-month-nav h2{margin:1px 0 0}.rental-calendar-legend{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:12px 24px;border-bottom:1px solid var(--line);background:#f8fafc;font-size:.78rem;color:var(--muted)}.rental-calendar-legend>span{display:inline-flex;align-items:center;gap:7px}.rental-legend-dot{width:10px;height:10px;border-radius:3px;display:inline-block}.rental-legend-dot.is-active{background:#16845b}.rental-legend-dot.is-completed{background:#2374d8}.rental-legend-dot.is-cancelled{background:#98a3ad}.rental-calendar-day-number{width:29px;height:29px;display:grid!important;place-items:center;border-radius:50%;font-size:.83rem;font-weight:800;color:var(--navy);background:transparent!important;padding:0!important}.month-calendar-day.is-today .rental-calendar-day-number{background:var(--green)!important;color:var(--navy)}.rental-calendar-booking{padding-left:12px}.rental-calendar-booking:before{background:#16845b}.rental-calendar-booking.is-completed{background:#eef6ff}.rental-calendar-booking.is-completed:before{background:#2374d8}.rental-calendar-booking.is-cancelled{background:#f3f5f7;opacity:.58}.rental-calendar-booking.is-cancelled:before{background:#98a3ad}.rental-calendar-stall{display:block;font-size:.62rem;font-weight:900;line-height:1.15;text-transform:uppercase;letter-spacing:.05em;color:#4b5d6f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rental-calendar-booking strong{margin:2px 0}.rental-calendar-mobile-list .rental-calendar-stall{font-size:.68rem}.rental-calendar-mobile-list .calendar-booking-time{white-space:normal}
+@media(max-width:1100px){.rental-calendar-toolbar{align-items:flex-start;flex-direction:column}.rental-calendar-toolbar .calendar-filter-form{width:100%}}
+@media(max-width:900px){.rental-calendar-panel-head{padding:18px 20px}.rental-calendar-toolbar{padding:16px 20px}.rental-calendar-legend{padding:11px 20px}.rental-calendar-mobile-list{display:block;padding:0 20px 20px}}
+@media(max-width:600px){.rental-calendar-panel-head{padding:16px}.rental-calendar-panel-head,.rental-calendar-panel-head .admin-actions{align-items:stretch}.rental-calendar-panel-head .admin-actions{width:100%}.rental-calendar-panel-head .admin-actions .btn{flex:1}.rental-calendar-toolbar{padding:14px 16px}.rental-calendar-toolbar .calendar-filter-form{display:grid;grid-template-columns:1fr 1fr;width:100%}.rental-calendar-toolbar .calendar-filter-form label{min-width:0}.rental-calendar-toolbar .calendar-filter-form .btn{grid-column:1/-1}.rental-calendar-legend{padding:10px 16px;gap:10px 14px}.rental-calendar-mobile-list{padding:0 16px 18px}}

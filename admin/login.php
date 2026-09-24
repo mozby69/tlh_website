@@ -8,7 +8,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
 header('X-Robots-Tag: noindex, nofollow, noarchive');
-if(!empty($_SESSION['admin_id'])){redirect('index.php');}
+if(!empty($_SESSION['admin_id'])){redirect(is_calendar_viewer() ? 'booking-calendar.php' : 'index.php');}
 $error='';
 if($_SERVER['REQUEST_METHOD']==='POST'){
   verify_csrf();
@@ -36,9 +36,9 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
         ? 'Welcome back, ' . $welcomeName . '. You have signed in successfully.'
         : 'You have signed in successfully.');
       if (password_verify('Admin@123', (string)$user['password_hash'])) {
-        flash('warning', 'This account is still using the default installation password. Change it from Admin > Users before production use.');
+        flash('warning', ($user['role'] ?? '') === 'admin' ? 'This account is still using the default installation password. Change it from Admin > Users before production use.' : 'This account is still using the default installation password. Ask an administrator to reset it before production use.');
       }
-      redirect('index.php');
+      redirect(($user['role'] ?? '') === 'calendar_viewer' ? 'booking-calendar.php' : 'index.php');
     }
     $error='Invalid username or password.';
   }catch(Throwable $e){

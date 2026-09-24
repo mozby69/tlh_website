@@ -9,6 +9,7 @@ $adminPageTitle = 'Booking Calendar';
 $adminCalendarOnly = true;
 $hideAdminTopbar = true;
 $hideAdminFlashes = true;
+$calendarReadOnly = is_calendar_viewer();
 
 $monthInput = $_GET['month'] ?? date('Y-m');
 
@@ -105,7 +106,7 @@ function booking_time_for_day(array $booking, string $dateKey): string
     return 'All day';
 }
 
-function calendar_booking_modal_attributes(array $booking): string
+function calendar_booking_modal_attributes(array $booking, bool $readOnly = false): string
 {
     $paymentMethod = trim((string)($booking['booking_payment_method'] ?? ''));
     $paymentReference = trim((string)($booking['booking_payment_reference'] ?? ''));
@@ -135,7 +136,7 @@ function calendar_booking_modal_attributes(array $booking): string
         'data-reservation-client' => (string)$booking['client_name'],
         'data-reservation-organization' => $organization !== '' ? $organization : '—',
         'data-reservation-batch' => !empty($booking['batch_id']) ? (($booking['batch_reference'] ?? ('Batch #' . (int)$booking['batch_id'])) . ' · Occurrence #' . (int)$booking['batch_occurrence']) : '—',
-        'data-reservation-batch-url' => !empty($booking['batch_id']) ? 'batch-reservation-view.php?id=' . (int)$booking['batch_id'] : '',
+        'data-reservation-batch-url' => (!$readOnly && !empty($booking['batch_id'])) ? 'batch-reservation-view.php?id=' . (int)$booking['batch_id'] : '',
         'data-reservation-type' => reservation_type_label((string)$booking['reservation_type']),
         'data-reservation-package' => reservation_package_label($booking['pricing_package'] ?? null),
         'data-reservation-inclusions' => '• ' . reservation_inclusions_text($booking, "\n• "),
@@ -143,7 +144,7 @@ function calendar_booking_modal_attributes(array $booking): string
         'data-reservation-guests' => !empty($booking['guest_count']) ? (string)$booking['guest_count'] : '—',
         'data-reservation-status' => ucwords(str_replace('_', ' ', (string)$booking['status'])),
         'data-reservation-status-value' => (string)$booking['status'],
-        'data-reservation-can-update-status' => reservation_can_update_status($booking) ? '1' : '0',
+        'data-reservation-can-update-status' => (!$readOnly && reservation_can_update_status($booking)) ? '1' : '0',
         'data-reservation-lock-message' => $lockMessage,
         'data-reservation-status-class' => badge_class((string)$booking['status']),
         'data-reservation-calendar-hold' => $needsResolution ? 'Needs resolution · Event time passed while Pending' : ($hasEnded ? ($canLateExtend ? 'Event time passed · Late Extension available' : 'Event time passed · Operational changes locked') : (reservation_holds_calendar($booking) ? 'Schedule secured' : 'Pending request · Not holding slot')),
@@ -158,20 +159,20 @@ function calendar_booking_modal_attributes(array $booking): string
         'data-reservation-payment-status' => ucfirst((string)($booking['payment_status'] ?? 'unpaid')),
         'data-reservation-payment-status-class' => badge_class((string)($booking['payment_status'] ?? 'unpaid')),
         'data-reservation-payment-remaining' => number_format($remainingBalance, 2, '.', ''),
-        'data-reservation-payment-can-add' => $remainingBalance > 0.001 ? '1' : '0',
+        'data-reservation-payment-can-add' => (!$readOnly && $remainingBalance > 0.001) ? '1' : '0',
         'data-reservation-total' => money($targetAmount),
         'data-reservation-paid' => money((float)($booking['amount_paid'] ?? 0)),
         'data-reservation-balance' => money($excessCredit > 0 ? $excessCredit : $remainingBalance),
         'data-reservation-balance-label' => (string)$booking['status'] === 'cancelled'
             ? ($excessCredit > 0 ? 'Refund Pending' : 'Cancellation Balance')
             : ($excessCredit > 0 ? 'Excess Payment Credit' : 'Balance'),
-        'data-reservation-url' => 'reservation-view.php?id=' . (int)$booking['id'],
-        'data-reservation-print-url' => 'reservation-print.php?id=' . (int)$booking['id'],
-        'data-reservation-edit-url' => reservation_can_edit($booking) ? 'reservation-edit.php?id=' . (int)$booking['id'] : '',
-        'data-reservation-reschedule-url' => reservation_can_reschedule($booking) ? 'reservation-reschedule.php?id=' . (int)$booking['id'] : '',
-        'data-reservation-extend-url' => reservation_can_record_extension($booking) ? 'reservation-extend.php?id=' . (int)$booking['id'] : '',
+        'data-reservation-url' => $readOnly ? '' : 'reservation-view.php?id=' . (int)$booking['id'],
+        'data-reservation-print-url' => $readOnly ? '' : 'reservation-print.php?id=' . (int)$booking['id'],
+        'data-reservation-edit-url' => (!$readOnly && reservation_can_edit($booking)) ? 'reservation-edit.php?id=' . (int)$booking['id'] : '',
+        'data-reservation-reschedule-url' => (!$readOnly && reservation_can_reschedule($booking)) ? 'reservation-reschedule.php?id=' . (int)$booking['id'] : '',
+        'data-reservation-extend-url' => (!$readOnly && reservation_can_record_extension($booking)) ? 'reservation-extend.php?id=' . (int)$booking['id'] : '',
         'data-reservation-extend-label' => $canLateExtend ? 'Late Extension' : 'Extend',
-        'data-reservation-cancel-url' => reservation_can_cancel($booking) ? 'reservation-cancel.php?id=' . (int)$booking['id'] : '',
+        'data-reservation-cancel-url' => (!$readOnly && reservation_can_cancel($booking)) ? 'reservation-cancel.php?id=' . (int)$booking['id'] : '',
     ];
 
     $html = '';
@@ -192,6 +193,7 @@ include __DIR__ . '/_header.php';
     <div class="calendar-only-title">
       <h2><?= e($monthStart->format('F Y')) ?></h2>
       <a href="?<?= e(calendar_query(date('Y-m'))) ?>">Today</a>
+      <?php if ($calendarReadOnly): ?><a href="rental-calendar.php?month=<?= e($monthInput) ?>">Rental Calendar</a><span class="calendar-viewer-readonly-badge">Read only</span><?php endif; ?>
     </div>
     <a class="calendar-nav-btn" href="?<?= e(calendar_query($nextMonth)) ?>" aria-label="Next month">›</a>
     <span class="calendar-only-menu-spacer" aria-hidden="true"></span>
@@ -212,7 +214,7 @@ include __DIR__ . '/_header.php';
     ?>
       <div class="month-calendar-day <?= $isCurrentMonth ? '' : 'outside-month' ?> <?= $isToday ? 'is-today' : '' ?> <?= count($dayBookings) >= 3 ? 'has-many-bookings' : '' ?>" role="gridcell" aria-label="<?= e($cursor->format('F j, Y')) ?>">
         <div class="month-day-head">
-          <a href="reservations.php?date=<?= e($dateKey) ?>" title="View reservations for <?= e($cursor->format('F j, Y')) ?>"><?= (int)$cursor->format('j') ?></a>
+          <?php if ($calendarReadOnly): ?><span class="calendar-day-number"><?= (int)$cursor->format('j') ?></span><?php else: ?><a href="reservations.php?date=<?= e($dateKey) ?>" title="View reservations for <?= e($cursor->format('F j, Y')) ?>"><?= (int)$cursor->format('j') ?></a><?php endif; ?>
           <?php if ($dayBookings): ?><span><?= count($dayBookings) ?></span><?php endif; ?>
         </div>
         <div class="month-day-bookings">
@@ -221,13 +223,13 @@ include __DIR__ . '/_header.php';
           ?>
             <a
               class="calendar-booking type-<?= e($booking['reservation_type']) ?> status-<?= e($booking['status']) ?> <?= $inactive ? 'is-inactive' : '' ?>"
-              href="reservation-view.php?id=<?= (int)$booking['id'] ?>"
+              href="<?= $calendarReadOnly ? '?month=' . e($monthInput) : 'reservation-view.php?id=' . (int)$booking['id'] ?>"
               title="<?= e($booking['client_name']) ?>"
-              <?= calendar_booking_modal_attributes($booking) ?>
+              <?= calendar_booking_modal_attributes($booking, $calendarReadOnly) ?>
             >
               <strong><?= e($booking['client_name']) ?></strong>
               <span class="calendar-booking-time"><?= e(booking_time_for_day($booking, $dateKey)) ?></span>
-              <?php if (!reservation_holds_calendar($booking)): ?><span class="calendar-booking-hold-note">Not holding slot</span><?php endif; ?>
+              <?php if (!reservation_holds_calendar($booking) && !reservation_has_ended($booking)): ?><span class="calendar-booking-hold-note">Not holding slot</span><?php endif; ?>
             </a>
           <?php endforeach; ?>
           <?php if (!$dayBookings): ?><span class="calendar-empty-day">Available</span><?php endif; ?>
@@ -259,10 +261,10 @@ include __DIR__ . '/_header.php';
           </div>
           <div class="calendar-mobile-bookings">
             <?php foreach ($items as $booking): ?>
-              <a class="calendar-booking type-<?= e($booking['reservation_type']) ?> status-<?= e($booking['status']) ?>" href="reservation-view.php?id=<?= (int)$booking['id'] ?>" <?= calendar_booking_modal_attributes($booking) ?>>
+              <a class="calendar-booking type-<?= e($booking['reservation_type']) ?> status-<?= e($booking['status']) ?>" href="<?= $calendarReadOnly ? '?month=' . e($monthInput) : 'reservation-view.php?id=' . (int)$booking['id'] ?>" <?= calendar_booking_modal_attributes($booking, $calendarReadOnly) ?>>
                 <strong><?= e($booking['client_name']) ?></strong>
                 <span class="calendar-booking-time"><?= e(booking_time_for_day($booking, $dateKey)) ?></span>
-                <?php if (!reservation_holds_calendar($booking)): ?><span class="calendar-booking-hold-note">Not holding slot</span><?php endif; ?>
+                <?php if (!reservation_holds_calendar($booking) && !reservation_has_ended($booking)): ?><span class="calendar-booking-hold-note">Not holding slot</span><?php endif; ?>
               </a>
             <?php endforeach; ?>
           </div>
@@ -314,6 +316,7 @@ include __DIR__ . '/_header.php';
         <div><span id="reservationModalBalanceLabel">Balance</span><strong id="reservationModalBalance"></strong></div>
       </div>
 
+      <?php if (!$calendarReadOnly): ?>
       <div class="reservation-modal-quick-actions" aria-label="Quick reservation updates">
         <section class="reservation-modal-quick-card">
           <div class="reservation-modal-quick-head">
@@ -390,17 +393,20 @@ include __DIR__ . '/_header.php';
           <div class="reservation-modal-quick-unavailable" id="reservationModalPaymentUnavailable" hidden>This reservation has no remaining balance to collect.</div>
         </section>
       </div>
+      <?php else: ?>
+        <div class="calendar-viewer-readonly-note"><strong>Read-only calendar access</strong><span>You can review reservation details, but changes and payment actions are disabled for this account.</span></div>
+      <?php endif; ?>
     </div>
 
     <footer class="reservation-modal-footer">
       <button type="button" class="btn btn-outline" data-reservation-modal-close>Close</button>
-      <a class="btn btn-outline" id="reservationModalPrintLink" href="reservations.php" target="_blank" rel="noopener">Print Reservation</a>
-      <a class="btn btn-outline" id="reservationModalBatchLink" href="reservations.php?view=batches">View Batch</a>
-      <a class="btn btn-outline" id="reservationModalRescheduleLink" href="reservations.php">Reschedule</a>
-      <a class="btn btn-outline" id="reservationModalExtendLink" href="reservations.php">Extend</a>
-      <a class="btn btn-danger" id="reservationModalCancelLink" href="reservations.php">Cancel Reservation</a>
-      <a class="btn btn-primary" id="reservationModalEditLink" href="reservations.php">Edit Reservation</a>
-      <a class="btn btn-dark" id="reservationModalOpenLink" href="reservations.php">Open Full Reservation</a>
+      <a class="btn btn-outline" id="reservationModalPrintLink"<?= $calendarReadOnly ? ' hidden' : '' ?> href="reservations.php" target="_blank" rel="noopener">Print Reservation</a>
+      <a class="btn btn-outline" id="reservationModalBatchLink"<?= $calendarReadOnly ? ' hidden' : '' ?> href="reservations.php?view=batches">View Batch</a>
+      <a class="btn btn-outline" id="reservationModalRescheduleLink"<?= $calendarReadOnly ? ' hidden' : '' ?> href="reservations.php">Reschedule</a>
+      <a class="btn btn-outline" id="reservationModalExtendLink"<?= $calendarReadOnly ? ' hidden' : '' ?> href="reservations.php">Extend</a>
+      <a class="btn btn-danger" id="reservationModalCancelLink"<?= $calendarReadOnly ? ' hidden' : '' ?> href="reservations.php">Cancel Reservation</a>
+      <a class="btn btn-primary" id="reservationModalEditLink"<?= $calendarReadOnly ? ' hidden' : '' ?> href="reservations.php">Edit Reservation</a>
+      <a class="btn btn-dark" id="reservationModalOpenLink"<?= $calendarReadOnly ? ' hidden' : '' ?> href="reservations.php">Open Full Reservation</a>
     </footer>
   </section>
 </div>
@@ -539,19 +545,13 @@ include __DIR__ . '/_header.php';
     setStatus('reservationModalStatus', data.reservationStatus, data.reservationStatusClass);
     setStatus('reservationModalPaymentStatus', 'Payment: ' + data.reservationPaymentStatus, data.reservationPaymentStatusClass);
 
-    openLink.href = data.reservationUrl || trigger.href;
-    printLink.href = data.reservationPrintUrl || data.reservationUrl || trigger.href;
-    batchLink.href = data.reservationBatchUrl || 'reservations.php?view=batches';
-    batchLink.hidden = !data.reservationBatchUrl;
-    editLink.href = data.reservationEditUrl || data.reservationUrl || trigger.href;
-    editLink.hidden = !data.reservationEditUrl;
-    cancelLink.href = data.reservationCancelUrl || data.reservationUrl || trigger.href;
-    cancelLink.hidden = !data.reservationCancelUrl;
-    rescheduleLink.href = data.reservationRescheduleUrl || data.reservationUrl || trigger.href;
-    rescheduleLink.hidden = !data.reservationRescheduleUrl;
-    extendLink.href = data.reservationExtendUrl || data.reservationUrl || trigger.href;
-    extendLink.textContent = data.reservationExtendLabel || 'Extend';
-    extendLink.hidden = !data.reservationExtendUrl;
+    if (openLink) { openLink.href = data.reservationUrl || trigger.href; openLink.hidden = !data.reservationUrl; }
+    if (printLink) { printLink.href = data.reservationPrintUrl || data.reservationUrl || trigger.href; printLink.hidden = !data.reservationPrintUrl; }
+    if (batchLink) { batchLink.href = data.reservationBatchUrl || 'reservations.php?view=batches'; batchLink.hidden = !data.reservationBatchUrl; }
+    if (editLink) { editLink.href = data.reservationEditUrl || data.reservationUrl || trigger.href; editLink.hidden = !data.reservationEditUrl; }
+    if (cancelLink) { cancelLink.href = data.reservationCancelUrl || data.reservationUrl || trigger.href; cancelLink.hidden = !data.reservationCancelUrl; }
+    if (rescheduleLink) { rescheduleLink.href = data.reservationRescheduleUrl || data.reservationUrl || trigger.href; rescheduleLink.hidden = !data.reservationRescheduleUrl; }
+    if (extendLink) { extendLink.href = data.reservationExtendUrl || data.reservationUrl || trigger.href; extendLink.textContent = data.reservationExtendLabel || 'Extend'; extendLink.hidden = !data.reservationExtendUrl; }
 
     if (resetQuickActions) configureQuickActions(data);
   };
@@ -571,9 +571,9 @@ include __DIR__ . '/_header.php';
     if (lastTrigger) lastTrigger.focus();
   };
 
-  const updateCalendarHoldNote = (trigger, holdsCalendar) => {
+  const updateCalendarHoldNote = (trigger, holdsCalendar, hasEnded) => {
     let note = trigger.querySelector('.calendar-booking-hold-note');
-    if (holdsCalendar) {
+    if (holdsCalendar || hasEnded) {
       if (note) note.remove();
       return;
     }
@@ -611,7 +611,7 @@ include __DIR__ . '/_header.php';
       trigger.dataset.reservationExtendUrl = reservation.extend_url || '';
       trigger.dataset.reservationExtendLabel = reservation.extend_label || 'Extend';
       trigger.dataset.reservationCancelUrl = reservation.cancel_url || '';
-      updateCalendarHoldNote(trigger, !!reservation.holds_calendar);
+      updateCalendarHoldNote(trigger, !!reservation.holds_calendar, !!reservation.has_ended);
     });
 
     if (lastTrigger) {

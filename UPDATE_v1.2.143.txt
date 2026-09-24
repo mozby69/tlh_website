@@ -1,0 +1,25 @@
+THE LEISURE HUB v1.2.143 - Food Stall Final Billing
+
+Apply this package on top of TLH v1.2.142.
+Preserve the folder structure and overwrite the matching files.
+
+WHAT CHANGED
+- Food Stall Rentals now support post-rental Electricity and Water charges.
+- Electricity and Water are manually encoded by Admin only on/after the rental end date.
+- Enter 0.00 when a utility was not used.
+- Final charges increase the Food Stall Total Due and combined Sales value.
+- Existing rental payments are preserved; any final utility charge creates/updates the remaining balance.
+- Past open rentals display as "For Final Billing".
+- A rental can only be marked Completed after final charges are confirmed and the total balance is fully paid.
+- Sales reports now include Stall Rental + Electricity + Water.
+
+DATABASE
+The application automatically adds these columns to food_stall_rentals:
+- electricity_amount
+- water_amount
+- final_billing_notes
+- final_billed_at
+- final_billed_by
+
+No manual SQL import is normally required. If the production DB user cannot ALTER tables,
+run database/upgrade_v1.2.143_food_stall_final_billing.sql once.

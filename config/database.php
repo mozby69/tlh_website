@@ -12,11 +12,11 @@
  */
 
 $tlhConfig = [
-    'db_host' => 'mysql',
+    'db_host' => '127.0.0.1',
     'db_port' => '3306',
-    'db_name' => 'tlh_db',
-    'db_user' => 'deploy_gamma_user',
-    'db_pass' => 'gamma_jgc_db2026@',
+    'db_name' => 'leisure_hub',
+    'db_user' => '',
+    'db_pass' => '',
     'app_timezone' => 'Asia/Manila',
     'db_timezone' => '+08:00',
     'app_env' => 'lan',

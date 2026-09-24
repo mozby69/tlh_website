@@ -451,7 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const packageForGuests = (guests) => {
       if (guests >= 1 && guests <= 29) return { key: 'regular', label: 'Regular Booking' };
       if (guests >= 30 && guests <= 200) return { key: 'tournament', label: 'Tournament (30–200 guests)' };
-      if (guests >= 201 && guests <= 300) return { key: 'big_event', label: 'Big Event (201–300 guests)' };
+      if (guests >= 201 && guests <= 400) return { key: 'big_event', label: 'Big Event (201–400 guests)' };
       return null;
     };
     const asMoney = (value) => currency.format(Number(value || 0));
@@ -527,7 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (!packageInfo) {
-        const unavailable = guests > 300;
+        const unavailable = guests > 400;
         const packageText = unavailable ? 'Maximum capacity exceeded' : 'Enter a valid guest count';
         setText(packageOutput, packageText);
         setText(reviewPackage, packageText);
@@ -538,8 +538,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setText(reviewTotal, '—');
         setText(reviewAddons, 'None');
         syncExistingDiscount(null);
-        resetChargeBreakdown('Venue Rental', unavailable ? 'The maximum supported capacity is 300 guests.' : 'Enter 1–300 guests to calculate the rate.');
-        setText(messageOutput, unavailable ? 'The maximum supported capacity is 300 guests.' : 'Enter 1–300 guests to calculate the rate.');
+        resetChargeBreakdown('Venue Rental', unavailable ? 'The maximum supported capacity is 400 guests.' : 'Enter 1–400 guests to calculate the rate.');
+        setText(messageOutput, unavailable ? 'The maximum supported capacity is 400 guests.' : 'Enter 1–400 guests to calculate the rate.');
         summary?.classList.toggle('pricing-error', unavailable);
         form.querySelector('[data-package-preview]')?.classList.toggle('pricing-error', unavailable);
         delete form.dataset.calculatedTotal;
@@ -2605,22 +2605,22 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!Number.isFinite(count) || count < 1) return 'Enter guest count';
       if (count <= 29) return 'Regular';
       if (count <= 200) return 'Tournament';
-      if (count <= 300) return 'Big Event';
+      if (count <= 400) return 'Big Event';
       return 'Invalid guest count';
     };
 
     const syncQuickPricePending = (checking = false) => {
       if (!quickPrice) return;
       const count = Number(guests?.value || 0);
-      const validGuests = Number.isFinite(count) && count >= 1 && count <= 300;
+      const validGuests = Number.isFinite(count) && count >= 1 && count <= 400;
       const label = packageLabel();
       if (quickPricePackage) quickPricePackage.textContent = label;
-      quickPrice.classList.toggle('pricing-error', Number.isFinite(count) && count > 300);
+      quickPrice.classList.toggle('pricing-error', Number.isFinite(count) && count > 400);
       if (!validGuests) {
         if (quickPriceTotal) quickPriceTotal.textContent = '—';
-        if (quickPriceMessage) quickPriceMessage.textContent = count > 300
-          ? 'Maximum capacity is 300 guests.'
-          : 'Enter 1–300 guests to calculate the batch price.';
+        if (quickPriceMessage) quickPriceMessage.textContent = count > 400
+          ? 'Maximum capacity is 400 guests.'
+          : 'Enter 1–400 guests to calculate the batch price.';
         return;
       }
       if (!scheduleReady()) {
@@ -2788,7 +2788,7 @@ document.addEventListener('DOMContentLoaded', () => {
         form.dispatchEvent(new CustomEvent('pricing-updated'));
         syncQuickPricePending(false);
         if (priceTotal) priceTotal.textContent = '—';
-        if (pricePackage) pricePackage.textContent = 'Enter a valid guest count (1–300) to calculate the package and price.';
+        if (pricePackage) pricePackage.textContent = 'Enter a valid guest count (1–400) to calculate the package and price.';
         if (priceScope) priceScope.textContent = scheduleReady() ? `${data?.available_count || 0} occurrence${Number(data?.available_count) === 1 ? '' : 's'} currently available` : 'Complete the schedule to calculate the batch.';
         if (priceLines) priceLines.innerHTML = '<div class="batch-price-line is-placeholder"><span>Price breakdown</span><strong>Waiting for pricing details</strong></div>';
         if (priceNote) priceNote.textContent = 'Rates are taken from the current Rates Settings. Setup and cleanup blocks are not billed.';
@@ -3052,7 +3052,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!response.ok) {
           lastResult = null;
           syncQuickPricePending(false);
-          if (quickPriceMessage && scheduleReady() && Number(guests?.value || 0) >= 1 && Number(guests?.value || 0) <= 300) {
+          if (quickPriceMessage && scheduleReady() && Number(guests?.value || 0) >= 1 && Number(guests?.value || 0) <= 400) {
             quickPriceMessage.textContent = 'Live price calculation is temporarily unavailable. Final pricing will still be calculated when the batch is created.';
           }
           setState('warning', 'Live check unavailable', data.message || 'The batch will still be checked before creation.');
@@ -3070,7 +3070,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (error?.name === 'AbortError') return;
         lastResult = null;
         syncQuickPricePending(false);
-        if (quickPriceMessage && scheduleReady() && Number(guests?.value || 0) >= 1 && Number(guests?.value || 0) <= 300) {
+        if (quickPriceMessage && scheduleReady() && Number(guests?.value || 0) >= 1 && Number(guests?.value || 0) <= 400) {
           quickPriceMessage.textContent = 'Live price calculation is temporarily unavailable. Final pricing will still be calculated when the batch is created.';
         }
         setState('warning', 'Live check unavailable', 'The live calendar check could not be completed. The server will still check every occurrence before creation.');
@@ -3166,7 +3166,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const syncBatchComplimentaryEquipment = () => {
       if (!equipmentComplimentary) return;
       const guestCount = Number.parseInt(guests?.value || '', 10);
-      const includedByPackage = Number.isFinite(guestCount) && guestCount >= 30 && guestCount <= 300;
+      const includedByPackage = Number.isFinite(guestCount) && guestCount >= 30 && guestCount <= 400;
       equipmentComplimentary.disabled = includedByPackage || !equipment?.checked;
       if (includedByPackage || !equipment?.checked) equipmentComplimentary.checked = false;
     };

@@ -174,7 +174,7 @@ $normalize = static function () use (&$form, &$selectedWeekdays, &$errors, $star
     if ($client === '') $errors[] = 'Client name is required.';
     if ($phone === '') $errors[] = 'Mobile number is required.';
     if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Email address is invalid.';
-    if ($guests < 1 || reservation_package_for_guests($guests) === null) $errors[] = 'Guest count must be between 1 and 300 guests.';
+    if ($guests < 1 || reservation_package_for_guests($guests) === null) $errors[] = 'Guest count must be between 1 and 400 guests.';
     if (!array_key_exists($cooling, reservation_cooling_options())) $errors[] = 'Choose Fan with Lights or Aircon with Lights.';
     if (!in_array($source, ['walk_in', 'internal', 'website'], true)) $source = 'walk_in';
     if (!in_array($status, ['pending', 'for_review', 'approved'], true)) $status = 'approved';
@@ -692,7 +692,7 @@ include __DIR__ . '/_header.php';
 
       <div class="form-grid batch-shared-schedule-fields">
         <div class="form-group"><label>Reservation Type *</label><select name="reservation_type" data-batch-type required <?= $appendBatch ? 'disabled' : '' ?>><option value="basketball" <?= $form['reservation_type']==='basketball'?'selected':'' ?>>Basketball Court</option><option value="volleyball" <?= $form['reservation_type']==='volleyball'?'selected':'' ?>>Volleyball Court</option><option value="event" <?= $form['reservation_type']==='event'?'selected':'' ?>>Events Reservation</option></select></div>
-        <div class="form-group"><label>Expected Guests *</label><input type="number" min="1" max="300" name="guest_count" value="<?= e((string)$form['guest_count']) ?>" data-batch-guests required <?= $appendBatch ? 'disabled' : '' ?>><span class="field-help">1–29 Regular · 30–200 Tournament · 201–300 Big Event.</span></div>
+        <div class="form-group"><label>Expected Guests *</label><input type="number" min="1" max="400" name="guest_count" value="<?= e((string)$form['guest_count']) ?>" data-batch-guests required <?= $appendBatch ? 'disabled' : '' ?>><span class="field-help">1–29 Regular · 30–200 Tournament · 201–400 Big Event.</span></div>
         <div class="form-group"><label>Cooling Option *</label><select name="cooling_option" data-batch-cooling required <?= $appendBatch ? 'disabled' : '' ?>><?php foreach (reservation_cooling_options() as $value => $label): ?><option value="<?= e($value) ?>" <?= (string)$form['cooling_option']===$value?'selected':'' ?>><?= e($label) ?></option><?php endforeach; ?></select></div>
         <div class="form-group full"><div class="package-preview batch-quick-price-preview" data-batch-quick-price aria-live="polite"><span>Package</span><strong data-batch-quick-price-package>Enter guest count</strong><b data-batch-quick-price-total>—</b><p data-batch-quick-price-message>Enter the expected guests to calculate the batch price.</p></div></div>
       </div>

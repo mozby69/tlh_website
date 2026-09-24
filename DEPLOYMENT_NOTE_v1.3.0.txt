@@ -1,0 +1,25 @@
+THE LEISURE HUB v1.3.0 - FULL APPLICATION PACKAGE
+
+This is a structural Rentals-module upgrade from v1.2.158.
+
+Deployment safety
+- Back up the database before the first v1.3.0 load.
+- Do NOT replace the server's config/local.php.
+- This package intentionally does not include an actual database backup or XAMPP installer.
+
+Database migration
+- database/upgrade_v1.3.0_generic_rentals.sql
+- When schema privileges are available, the application runs the migration automatically.
+- Security Deposit transactions are stored separately from rental Sales/Collections.
+- Existing food_stalls / food_stall_rentals history is not deleted. It is copied into
+  the generic Rentals tables once, with legacy IDs retained for compatibility.
+
+Admin navigation
+- Main > Rental Calendar
+- Reservations > Rentals
+- Venue Management > Manage Rentables
+
+After deployment
+- Confirm existing Food Stall rentals appear under Rentals.
+- Confirm Rental Calendar shows existing schedules.
+- Add future restaurant/cafe/commercial spaces from Manage Rentables rather than changing code.

@@ -6,11 +6,11 @@
  * Never share config/local.php publicly or place a copy in downloadable folders.
  */
 return [
-    'db_host' => 'mysql',
+    'db_host' => '127.0.0.1',
     'db_port' => '3306',
-    'db_name' => 'tlh_db',
-    'db_user' => 'deploy_gamma_user',
-    'db_pass' => 'gamma_jgc_db2026@',
+    'db_name' => 'leisure_hub',
+    'db_user' => 'root',
+    'db_pass' => '',
 
     // TLH reports and MySQL NOW()/CURDATE() should use Philippine time.
     'app_timezone' => 'Asia/Manila',

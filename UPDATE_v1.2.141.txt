@@ -1,0 +1,15 @@
+TLH v1.2.141 - Food Stall Rentals
+
+Upload these files over your existing v1.2.140 installation while preserving folders.
+
+The new database tables are created automatically by includes/functions.php on first load.
+The SQL file under database/ is included as an optional manual migration/reference.
+
+New Admin pages:
+- admin/food-stall-rentals.php
+- admin/food-stall-rental-create.php
+- admin/food-stall-rental-view.php
+- admin/food-stall-spaces.php
+
+Food Stall Rentals are Administrator-only and are not exposed on the public website.
+Rental price is always entered manually; stall spaces have no default price.

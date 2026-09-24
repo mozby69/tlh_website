@@ -1,0 +1,17 @@
+TLH v1.2.146 - Report Layout Cleanup
+
+Affected files:
+- admin/reports.php
+- assets/css/modern-admin.css
+- service-worker.js
+- VERSION.txt
+
+Changes:
+- Compact Combined Sales summary cards.
+- Smaller Export CSV / Export Excel / Print controls.
+- Combined Sales uses compact columns: Date, Reference, Client/Tenant, Type, Status, Sales, Collected, Balance.
+- Tablet Combined Sales stays a table instead of oversized record cards.
+- Removes report horizontal overflow that could show a thick scrollbar across the screen.
+- Keeps phone card layout for small screens.
+- Cleaner landscape print layout with admin navigation/actions hidden.
+- No database changes.

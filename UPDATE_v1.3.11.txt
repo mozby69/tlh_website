@@ -1,0 +1,9 @@
+TLH v1.3.11
+
+Calendar Viewer rental details:
+- Rental Calendar entries are now clickable for Calendar Viewer accounts.
+- Clicking an entry opens a dedicated read-only Rental Details page.
+- Viewer details include tenant/contact, organization, schedule, status, rentables, locations, quantities, flexible dates, and notes.
+- Financial information is intentionally hidden.
+- Edit, payment, extend, cancel, delete, print, and other rental actions remain unavailable to Calendar Viewer accounts.
+- Admin rental workflows are unchanged.

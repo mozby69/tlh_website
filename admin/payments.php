@@ -198,8 +198,10 @@ try {
     foreach (['outstanding_balance', 'past_balance', 'upcoming_balance'] as $key) {
         $metrics[$key] = round((float)($metricRow[$key] ?? 0), 2);
     }
-    $metrics['month_collected'] = round((float)$pdo->query("SELECT COALESCE(SUM(CASE WHEN amount>0 THEN amount ELSE 0 END),0) FROM payments WHERE YEAR(paid_at)=YEAR(CURDATE()) AND MONTH(paid_at)=MONTH(CURDATE())")->fetchColumn(), 2);
-    $metrics['today_collected'] = round((float)$pdo->query("SELECT COALESCE(SUM(CASE WHEN amount>0 THEN amount ELSE 0 END),0) FROM payments WHERE DATE(paid_at)=CURDATE()")->fetchColumn(), 2);
+    // Net collections use the signed ledgers: payments are positive and refunds are negative.
+    // Security-deposit movements live in a separate ledger and are intentionally excluded.
+    $metrics['month_collected'] = round((float)$pdo->query("SELECT (SELECT COALESCE(SUM(amount),0) FROM payments WHERE YEAR(paid_at)=YEAR(CURDATE()) AND MONTH(paid_at)=MONTH(CURDATE())) + (SELECT COALESCE(SUM(amount),0) FROM rental_payments WHERE YEAR(paid_at)=YEAR(CURDATE()) AND MONTH(paid_at)=MONTH(CURDATE()))")->fetchColumn(), 2);
+    $metrics['today_collected'] = round((float)$pdo->query("SELECT (SELECT COALESCE(SUM(amount),0) FROM payments WHERE DATE(paid_at)=CURDATE()) + (SELECT COALESCE(SUM(amount),0) FROM rental_payments WHERE DATE(paid_at)=CURDATE())")->fetchColumn(), 2);
     $needsResolutionCount = (int)$pdo->query("SELECT COUNT(*) FROM reservations WHERE archived_at IS NULL AND status IN ('pending','for_review') AND event_end <= NOW()")->fetchColumn();
 
     $innerSql = $candidateSql;
@@ -294,7 +296,7 @@ include __DIR__ . '/_header.php';
 <section class="collections-hero" aria-labelledby="collectionsTitle">
   <div class="collections-hero-copy">
     <span class="dashboard-eyebrow">Finance Control Center</span>
-    <h2 id="collectionsTitle">Payment &amp; Collections</h2>
+    <h2 id="collectionsTitle">Payment &amp; Collections</h2><p class="small muted">Combined collection totals include Rentals. <a href="rentals.php">Manage rentals</a></p>
     <p>Track every verified balance from the payment ledger, prioritize past-event collections, and record late payments using the actual date received.</p>
   </div>
   <div class="collections-hero-actions">
@@ -321,9 +323,9 @@ include __DIR__ . '/_header.php';
     <small><?= $metrics['upcoming_count'] ?> upcoming reservation<?= $metrics['upcoming_count'] === 1 ? '' : 's' ?></small>
   </article>
   <article class="collection-metric-card is-collected">
-    <span>Collected This Month</span>
+    <span>Net Collected This Month</span>
     <strong><?= money($metrics['month_collected']) ?></strong>
-    <small><?= money($metrics['today_collected']) ?> received today</small>
+    <small><?= money($metrics['today_collected']) ?> net today · payments less refunds</small>
   </article>
 </section>
 

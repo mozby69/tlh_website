@@ -1,0 +1,60 @@
+CREATE TABLE IF NOT EXISTS food_stalls (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  stall_code VARCHAR(60) NOT NULL,
+  stall_name VARCHAR(120) NULL,
+  location VARCHAR(160) NULL,
+  notes TEXT NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_by INT UNSIGNED NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY(id),
+  UNIQUE KEY uq_food_stall_code(stall_code),
+  KEY idx_food_stall_active(is_active),
+  CONSTRAINT fk_food_stall_admin FOREIGN KEY(created_by) REFERENCES admins(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS food_stall_rentals (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  reference_no VARCHAR(40) NOT NULL,
+  stall_id INT UNSIGNED NOT NULL,
+  tenant_name VARCHAR(160) NOT NULL,
+  contact_number VARCHAR(50) NULL,
+  organization VARCHAR(160) NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  rental_amount DECIMAL(12,2) NOT NULL,
+  amount_paid DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  payment_status ENUM('unpaid','partial','paid') NOT NULL DEFAULT 'unpaid',
+  status ENUM('active','completed','cancelled') NOT NULL DEFAULT 'active',
+  notes TEXT NULL,
+  cancelled_reason VARCHAR(255) NULL,
+  completed_at DATETIME NULL,
+  created_by INT UNSIGNED NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY(id),
+  UNIQUE KEY uq_food_stall_rental_reference(reference_no),
+  KEY idx_food_stall_rental_stall_dates(stall_id,start_date,end_date),
+  KEY idx_food_stall_rental_status(status,start_date,end_date),
+  CONSTRAINT fk_food_stall_rental_stall FOREIGN KEY(stall_id) REFERENCES food_stalls(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_food_stall_rental_admin FOREIGN KEY(created_by) REFERENCES admins(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS food_stall_payments (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  rental_id BIGINT UNSIGNED NOT NULL,
+  transaction_type VARCHAR(20) NOT NULL DEFAULT 'payment',
+  amount DECIMAL(12,2) NOT NULL,
+  payment_method VARCHAR(80) NOT NULL,
+  payment_reference VARCHAR(120) NULL,
+  notes TEXT NULL,
+  recorded_by INT UNSIGNED NULL,
+  paid_at DATETIME NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY(id),
+  KEY idx_food_stall_payment_rental(rental_id,paid_at),
+  KEY idx_food_stall_payment_admin(recorded_by),
+  CONSTRAINT fk_food_stall_payment_rental FOREIGN KEY(rental_id) REFERENCES food_stall_rentals(id) ON DELETE CASCADE,
+  CONSTRAINT fk_food_stall_payment_admin FOREIGN KEY(recorded_by) REFERENCES admins(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -8,9 +8,10 @@
  * when the connection is unavailable.
  */
 
-const CACHE_VERSION = 'tlh-pwa-v1.2.139-cancellation-refund-ledger';
-const STATIC_CACHE = `${CACHE_VERSION}-static`;
-const PAGE_CACHE = `${CACHE_VERSION}-pages`;
+const CACHE_VERSION = 'v1.3.11';
+const CACHE_PREFIX = 'tlh-pwa-';
+const STATIC_CACHE = `${CACHE_PREFIX}${CACHE_VERSION}-static`;
+const PAGE_CACHE = `${CACHE_PREFIX}${CACHE_VERSION}-pages`;
 
 const PRECACHE_ASSETS = [
   './offline.html',
@@ -86,7 +87,8 @@ function isStaticAsset(pathname) {
 }
 
 async function offlineResponse() {
-  return (await caches.match('./offline.html', { ignoreSearch: true })) ||
+  const cache = await caches.open(STATIC_CACHE);
+  return (await cache.match('./offline.html', { ignoreSearch: true })) ||
     new Response('You are offline. Please reconnect and try again.', {
       status: 503,
       headers: { 'Content-Type': 'text/plain; charset=UTF-8' }
@@ -104,7 +106,10 @@ self.addEventListener('activate', (event) => {
     caches.keys()
       .then((keys) => Promise.all(
         keys
-          .filter((key) => key.startsWith('tlh-pwa-') && ![STATIC_CACHE, PAGE_CACHE].includes(key))
+          .filter((key) => {
+            const isTlhCache = key.startsWith(CACHE_PREFIX) || /^v\d+\.\d+\.\d+-(static|pages)$/.test(key);
+            return isTlhCache && ![STATIC_CACHE, PAGE_CACHE].includes(key);
+          })
           .map((key) => caches.delete(key))
       ))
       .then(() => self.clients.claim())
@@ -132,10 +137,10 @@ self.addEventListener('fetch', (event) => {
   // Static app-shell assets use cache-first with a background refresh.
   if (isStaticAsset(pathname)) {
     event.respondWith((async () => {
-      const cached = await caches.match(request, { ignoreSearch: true });
+      const cache = await caches.open(STATIC_CACHE);
+      const cached = await cache.match(request, { ignoreSearch: true });
       const refresh = fetch(request).then(async (response) => {
         if (response.ok) {
-          const cache = await caches.open(STATIC_CACHE);
           await cache.put(request, response.clone());
         }
         return response;
@@ -163,7 +168,8 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       } catch (error) {
-        return (await caches.match(request, { ignoreSearch: true })) || offlineResponse();
+        const cache = await caches.open(PAGE_CACHE);
+        return (await cache.match(request, { ignoreSearch: true })) || offlineResponse();
       }
     })());
     return;

@@ -1,0 +1,14 @@
+TLH v1.3.6 - Flexible Rental Cancellation
+
+- Upcoming rentals can now be cancelled even when they already have rental payments or charges. Rentals that have already started continue to use End Rental Early so consumed dates and final billing remain accurate.
+- Admin manually chooses the refund amount from zero up to the net rental payment received.
+- Any refund is recorded as a separate negative rental-payment ledger transaction.
+- The amount not refunded is recorded as TLH's retained cancellation value.
+- Cancellation immediately releases the rental dates/availability.
+- Security Deposits remain separate and can be refunded independently from the Rental record.
+- Rental Details and Rental Print show the cancellation settlement.
+- Reports Center > Cancellations & Refunds now includes Rental cancellations.
+- Sales recognizes retained cancelled-rental value on the cancellation date.
+- Collections reports show rental refunds as refund transactions and reduce net collections.
+
+Database migration: database/upgrade_v1.3.6_rental_cancellations.sql

@@ -27,9 +27,9 @@ $reportCatalog = [
         'basis' => 'Event date',
     ],
     'sales' => [
-        'label' => 'Reservation Sales',
-        'title' => 'Reservation Sales Report',
-        'description' => 'Booking value by event date for approved and completed reservations. This is not the same as cash collected.',
+        'label' => 'Sales',
+        'title' => 'Combined Sales Report',
+        'description' => 'Venue reservation sales and Admin-encoded rental sales in one report. This is separate from cash collection timing.',
         'basis' => 'Event date',
     ],
     'daily' => [
@@ -41,7 +41,7 @@ $reportCatalog = [
     'cancellations' => [
         'label' => 'Cancellations & Refunds',
         'title' => 'Cancellation & Refund Report',
-        'description' => 'Cancellation charges, refunds, pending refund obligations, and any remaining cancellation balance due from the client.',
+        'description' => 'Reservation and rental cancellations, amounts retained by TLH, refunds issued, and any remaining settlement obligations.',
         'basis' => 'Cancellation date',
     ],
     'management' => [
@@ -176,62 +176,47 @@ try {
     if ($report === 'collections') {
         $params = [];
         $where = [$dateClause('p.paid_at', $dateFrom, $dateTo, $params)];
-        if ($type !== '') {
-            $where[] = 'r.reservation_type=?';
-            $params[] = $type;
-        }
-        if ($method !== '') {
-            $where[] = 'p.payment_method=?';
-            $params[] = $method;
-        }
-        if ($search !== '') {
-            $where[] = '(r.reference_no LIKE ? OR r.client_name LIKE ? OR r.phone LIKE ? OR r.email LIKE ? OR p.payment_reference LIKE ? OR b.batch_reference LIKE ?)';
-            $term = '%' . $search . '%';
-            array_push($params, $term, $term, $term, $term, $term, $term);
-        }
-        $stmt = $pdo->prepare("SELECT p.id,p.transaction_type,p.amount,p.payment_method,p.payment_reference,p.notes,p.paid_at,
-                r.id AS reservation_id,r.reference_no,r.client_name,r.phone,r.email,r.event_start,r.reservation_type,
-                b.batch_reference,a.full_name AS recorded_by_name
-            FROM payments p
-            INNER JOIN reservations r ON r.id=p.reservation_id
-            LEFT JOIN reservation_batches b ON b.id=r.batch_id
-            LEFT JOIN admins a ON a.id=p.recorded_by
-            WHERE " . implode(' AND ', $where) . "
-            ORDER BY p.paid_at DESC,p.id DESC");
-        $stmt->execute($params);
-        $rows = $stmt->fetchAll();
+        if ($type !== '') { $where[] = 'r.reservation_type=?'; $params[] = $type; }
+        if ($method !== '') { $where[] = 'p.payment_method=?'; $params[] = $method; }
+        if ($search !== '') { $where[] = '(r.reference_no LIKE ? OR r.client_name LIKE ? OR r.phone LIKE ? OR r.email LIKE ? OR p.payment_reference LIKE ? OR b.batch_reference LIKE ?)'; $term='%'.$search.'%'; array_push($params,$term,$term,$term,$term,$term,$term); }
+        $stmt=$pdo->prepare("SELECT p.id,p.transaction_type,p.amount,p.payment_method,p.payment_reference,p.notes,p.paid_at,
+                r.id AS record_id,r.reference_no AS record_reference,r.client_name AS record_client,r.phone,r.event_start AS record_date,
+                b.batch_reference,a.full_name AS recorded_by_name,'Reservation' AS record_type,
+                CONCAT('reservation-view.php?id=',r.id) AS record_href
+            FROM payments p INNER JOIN reservations r ON r.id=p.reservation_id
+            LEFT JOIN reservation_batches b ON b.id=r.batch_id LEFT JOIN admins a ON a.id=p.recorded_by
+            WHERE ".implode(' AND ',$where));
+        $stmt->execute($params); $rows=$stmt->fetchAll();
 
-        $gross = 0.0;
-        $refunds = 0.0;
-        $net = 0.0;
-        $reservationIds = [];
-        foreach ($rows as &$row) {
-            $amount = round((float)$row['amount'], 2);
-            if ($amount > 0) $gross += $amount;
-            if ($amount < 0) $refunds += abs($amount);
-            $net += $amount;
-            $reservationIds[(int)$row['reservation_id']] = true;
-            $row['transaction_label'] = payment_transaction_type($row) === 'refund' ? 'Refund' : 'Payment';
+        if ($type === '') {
+            $rParams=[]; $rWhere=[$dateClause('rp.paid_at',$dateFrom,$dateTo,$rParams)];
+            if($method!==''){ $rWhere[]='rp.payment_method=?'; $rParams[]=$method; }
+            if($search!==''){ $rWhere[]='(rr.reference_no LIKE ? OR rr.client_name LIKE ? OR rr.contact_number LIKE ? OR rp.payment_reference LIKE ? OR EXISTS(SELECT 1 FROM rental_items ri JOIN rentables x ON x.id=ri.rentable_id WHERE ri.rental_id=rr.id AND (x.code LIKE ? OR x.name LIKE ?)))'; $term='%'.$search.'%'; array_push($rParams,$term,$term,$term,$term,$term,$term); }
+            $rStmt=$pdo->prepare("SELECT rp.id,rp.transaction_type,rp.amount,rp.payment_method,rp.payment_reference,rp.notes,rp.paid_at,
+                    rr.id AS record_id,rr.reference_no AS record_reference,rr.client_name AS record_client,rr.contact_number AS phone,rr.start_date AS record_date,
+                    NULL AS batch_reference,a.full_name AS recorded_by_name,'Rental' AS record_type,
+                    CONCAT('rental-view.php?id=',rr.id) AS record_href
+                FROM rental_payments rp INNER JOIN rentals rr ON rr.id=rp.rental_id
+                LEFT JOIN admins a ON a.id=rp.recorded_by WHERE ".implode(' AND ',$rWhere));
+            $rStmt->execute($rParams); $rows=array_merge($rows,$rStmt->fetchAll());
         }
-        unset($row);
-        $summaryCards = [
-            ['label' => 'Gross Collected', 'value' => $gross, 'type' => 'money', 'hint' => 'positive ledger receipts'],
-            ['label' => 'Refunds', 'value' => $refunds, 'type' => 'money', 'hint' => 'money returned to clients'],
-            ['label' => 'Net Collections', 'value' => $net, 'type' => 'money', 'hint' => 'gross less refunds'],
-            ['label' => 'Transactions', 'value' => count($rows), 'type' => 'number', 'hint' => count($reservationIds) . ' reservation' . (count($reservationIds) === 1 ? '' : 's')],
+        usort($rows,static fn($a,$b)=>strcmp((string)$b['paid_at'],(string)$a['paid_at']));
+        $gross=0.0;$refunds=0.0;$net=0.0;$records=[];
+        foreach($rows as &$row){$amt=round((float)$row['amount'],2);if($amt>0)$gross+=$amt;if($amt<0)$refunds+=abs($amt);$net+=$amt;$records[$row['record_type'].'-'.$row['record_id']]=true;$row['transaction_label']=((string)$row['transaction_type']==='refund'||$amt<0)?'Refund':'Payment';}unset($row);
+        $summaryCards=[
+            ['label'=>'Gross Collected','value'=>$gross,'type'=>'money','hint'=>'reservations + rentals'],
+            ['label'=>'Refunds','value'=>$refunds,'type'=>'money','hint'=>'money returned'],
+            ['label'=>'Net Collections','value'=>$net,'type'=>'money','hint'=>'combined payment ledgers'],
+            ['label'=>'Transactions','value'=>count($rows),'type'=>'number','hint'=>count($records).' sales record'.(count($records)===1?'':'s')],
         ];
-        $columns = [
-            ['key' => 'transaction_label', 'label' => 'Type', 'type' => 'status'],
-            ['key' => 'paid_at', 'label' => 'Paid At', 'type' => 'datetime'],
-            ['key' => 'reference_no', 'label' => 'Reservation', 'type' => 'reservation'],
-            ['key' => 'client_name', 'label' => 'Client', 'type' => 'client'],
-            ['key' => 'event_start', 'label' => 'Event Date', 'type' => 'datetime'],
-            ['key' => 'payment_method', 'label' => 'Method', 'type' => 'text'],
-            ['key' => 'payment_reference', 'label' => 'Reference / OR No.', 'type' => 'text'],
-            ['key' => 'recorded_by_name', 'label' => 'Recorded By', 'type' => 'text'],
-            ['key' => 'amount', 'label' => 'Amount', 'type' => 'signed_money'],
+        $columns=[
+            ['key'=>'transaction_label','label'=>'Transaction','type'=>'status'],['key'=>'paid_at','label'=>'Paid At','type'=>'datetime'],
+            ['key'=>'record_reference','label'=>'Record','type'=>'record_link'],['key'=>'record_type','label'=>'Sales Type','type'=>'text_strong'],
+            ['key'=>'record_client','label'=>'Client / Tenant','type'=>'client'],['key'=>'record_date','label'=>'Event / Rental Start','type'=>'date_only'],
+            ['key'=>'payment_method','label'=>'Method','type'=>'text'],['key'=>'payment_reference','label'=>'Reference / OR No.','type'=>'text'],
+            ['key'=>'recorded_by_name','label'=>'Recorded By','type'=>'text'],['key'=>'amount','label'=>'Amount','type'=>'signed_money'],
         ];
-        $reportNote = 'Collections are reported using the actual Paid At date. Refund ledger entries are shown separately and reduce Net Collections.';
+        $reportNote='Collections use the actual Paid At date. This report combines reservation payments and the generic Rentals payment ledger; refundable Security Deposits are tracked separately and are excluded from Sales and Collections.';
     }
 
     if ($report === 'outstanding') {
@@ -313,58 +298,67 @@ try {
     }
 
     if ($report === 'sales') {
-        $params = [];
-        $where = ["r.status IN ('approved','completed')", $dateClause('r.event_start', $dateFrom, $dateTo, $params)];
-        if ($type !== '') {
-            $where[] = 'r.reservation_type=?';
-            $params[] = $type;
+        $params=[]; $where=["r.status IN ('approved','completed')",$dateClause('r.event_start',$dateFrom,$dateTo,$params)];
+        if($type!==''){ $where[]='r.reservation_type=?';$params[]=$type; }
+        if($search!==''){ $where[]='(r.reference_no LIKE ? OR r.client_name LIKE ? OR r.phone LIKE ? OR r.email LIKE ? OR b.batch_reference LIKE ?)';$term='%'.$search.'%';array_push($params,$term,$term,$term,$term,$term); }
+        $stmt=$pdo->prepare("SELECT r.id AS record_id,r.reference_no AS record_reference,r.client_name AS record_client,r.phone,
+                r.event_start AS record_date,COALESCE(r.final_amount,r.estimated_amount,0) AS sales_value,
+                COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.reservation_id=r.id),0) AS collected,
+                CONCAT('Reservation · '," . "CASE r.reservation_type WHEN 'basketball' THEN 'Basketball Court' WHEN 'volleyball' THEN 'Volleyball Court' ELSE 'Event' END) AS sales_type,
+                CONCAT('reservation-view.php?id=',r.id) AS record_href,
+                CASE r.status WHEN 'completed' THEN 'Completed' ELSE 'Approved' END AS display_status
+            FROM reservations r LEFT JOIN reservation_batches b ON b.id=r.batch_id WHERE ".implode(' AND ',$where));
+        $stmt->execute($params);$rows=$stmt->fetchAll();
+        $reservationValue=0.0;$stallValue=0.0;$outstandingValue=0.0;$collectedAgainst=0.0;
+        foreach($rows as &$row){$row['balance']=max(0,round((float)$row['sales_value']-(float)$row['collected'],2));$reservationValue+=(float)$row['sales_value'];$collectedAgainst+=(float)$row['collected'];$outstandingValue+=(float)$row['balance'];}unset($row);
+        if($type===''){
+            // One-time rentals: recognize the complete rental value on the rental start date.
+            $rp=[];$rw=["rr.status<>'cancelled'","rr.billing_mode='one_time'",$dateClause('rr.start_date',$dateFrom,$dateTo,$rp)];
+            if($search!==''){ $rw[]='(rr.reference_no LIKE ? OR rr.client_name LIKE ? OR rr.contact_number LIKE ? OR rr.organization LIKE ? OR EXISTS(SELECT 1 FROM rental_items ri JOIN rentables x ON x.id=ri.rentable_id WHERE ri.rental_id=rr.id AND (x.code LIKE ? OR x.name LIKE ?)))';$term='%'.$search.'%';array_push($rp,$term,$term,$term,$term,$term,$term); }
+            $rs=$pdo->prepare("SELECT rr.id AS record_id,rr.reference_no AS record_reference,rr.client_name AS record_client,rr.contact_number AS phone,
+                    rr.start_date AS record_date,(rr.base_amount+COALESCE((SELECT SUM(rc.amount) FROM rental_charges rc WHERE rc.rental_id=rr.id),0)) AS sales_value,
+                    COALESCE((SELECT SUM(rp.amount) FROM rental_payments rp WHERE rp.rental_id=rr.id),0) AS collected,
+                    CONCAT('Rental · ',COALESCE((SELECT GROUP_CONCAT(x.code ORDER BY ri.id SEPARATOR ', ') FROM rental_items ri JOIN rentables x ON x.id=ri.rentable_id WHERE ri.rental_id=rr.id),'Rentable')) AS sales_type,
+                    CONCAT('rental-view.php?id=',rr.id) AS record_href,
+                    CASE WHEN rr.status='completed' THEN 'Completed' WHEN rr.end_date<CURDATE() THEN 'For Final Billing' WHEN rr.start_date>CURDATE() THEN 'Upcoming' ELSE 'Active' END AS display_status
+                FROM rentals rr WHERE ".implode(' AND ',$rw));
+            $rs->execute($rp);$rentRows=$rs->fetchAll();
+            foreach($rentRows as &$row){$row['balance']=max(0,round((float)$row['sales_value']-(float)$row['collected'],2));$stallValue+=(float)$row['sales_value'];$collectedAgainst+=(float)$row['collected'];$outstandingValue+=(float)$row['balance'];}unset($row);
+            $rows=array_merge($rows,$rentRows);
+
+            // Monthly rentals: recognize rent and finalized period charges by billing period.
+            $mp=[];$mw=["rr.status<>'cancelled'","rr.billing_mode='monthly'",$dateClause('bp.period_start',$dateFrom,$dateTo,$mp)];
+            if($search!==''){ $mw[]='(rr.reference_no LIKE ? OR rr.client_name LIKE ? OR rr.organization LIKE ? OR EXISTS(SELECT 1 FROM rental_items ri JOIN rentables x ON x.id=ri.rentable_id WHERE ri.rental_id=rr.id AND (x.code LIKE ? OR x.name LIKE ?)))';$term='%'.$search.'%';array_push($mp,$term,$term,$term,$term,$term); }
+            $ms=$pdo->prepare("SELECT rr.id AS record_id,CONCAT(rr.reference_no,' / M',bp.period_no) AS record_reference,rr.client_name AS record_client,rr.contact_number AS phone,
+                    bp.period_start AS record_date,(bp.rent_amount+COALESCE((SELECT SUM(rc.amount) FROM rental_charges rc WHERE rc.billing_period_id=bp.id),0)) AS sales_value,
+                    GREATEST(0,LEAST((bp.rent_amount+COALESCE((SELECT SUM(rc2.amount) FROM rental_charges rc2 WHERE rc2.billing_period_id=bp.id),0)),
+                        COALESCE((SELECT SUM(rp.amount) FROM rental_payments rp WHERE rp.rental_id=rr.id),0)-COALESCE((SELECT SUM(bp2.rent_amount+COALESCE((SELECT SUM(rc3.amount) FROM rental_charges rc3 WHERE rc3.billing_period_id=bp2.id),0)) FROM rental_billing_periods bp2 WHERE bp2.rental_id=rr.id AND bp2.period_no<bp.period_no),0))) AS collected,
+                    CONCAT('Monthly Rental · ',COALESCE((SELECT GROUP_CONCAT(x.code ORDER BY ri.id SEPARATOR ', ') FROM rental_items ri JOIN rentables x ON x.id=ri.rentable_id WHERE ri.rental_id=rr.id),'Rentable')) AS sales_type,
+                    CONCAT('rental-view.php?id=',rr.id) AS record_href,
+                    CASE WHEN bp.finalized_at IS NOT NULL THEN 'Finalized' WHEN bp.period_end<CURDATE() THEN 'For Billing' ELSE 'Scheduled' END AS display_status
+                FROM rental_billing_periods bp JOIN rentals rr ON rr.id=bp.rental_id WHERE ".implode(' AND ',$mw));
+            $ms->execute($mp);$monthlyRows=$ms->fetchAll();
+            foreach($monthlyRows as &$row){$row['balance']=max(0,round((float)$row['sales_value']-(float)$row['collected'],2));$stallValue+=(float)$row['sales_value'];$collectedAgainst+=(float)$row['collected'];$outstandingValue+=(float)$row['balance'];}unset($row);
+            $rows=array_merge($rows,$monthlyRows);
+
+            // Cancelled rentals are excluded from Sales entirely. Refunds affect Net Collections only
+            // and remain visible in the Cancellation & Refund report, not as negative Sales rows.
         }
-        if ($search !== '') {
-            $where[] = '(r.reference_no LIKE ? OR r.client_name LIKE ? OR r.phone LIKE ? OR r.email LIKE ? OR b.batch_reference LIKE ?)';
-            $term = '%' . $search . '%';
-            array_push($params, $term, $term, $term, $term, $term);
-        }
-        $stmt = $pdo->prepare("SELECT r.*,b.batch_reference,
-                COALESCE(r.final_amount,r.estimated_amount,0) AS payment_target,
-                COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.reservation_id=r.id),0) AS ledger_amount_paid
-            FROM reservations r
-            LEFT JOIN reservation_batches b ON b.id=r.batch_id
-            WHERE " . implode(' AND ', $where) . "
-            ORDER BY r.event_start ASC,r.id ASC");
-        $stmt->execute($params);
-        $rows = $stmt->fetchAll();
-        $bookingValue = 0.0;
-        $collectedAgainst = 0.0;
-        $outstandingValue = 0.0;
-        foreach ($rows as &$row) {
-            $target = round((float)$row['payment_target'], 2);
-            $paid = round((float)$row['ledger_amount_paid'], 2);
-            $row['balance'] = max(0, round($target - $paid, 2));
-            $row['display_status'] = $statusLabel($row);
-            $bookingValue += $target;
-            $collectedAgainst += $paid;
-            $outstandingValue += $row['balance'];
-        }
-        unset($row);
-        $average = count($rows) > 0 ? $bookingValue / count($rows) : 0.0;
-        $summaryCards = [
-            ['label' => 'Reservation Value', 'value' => $bookingValue, 'type' => 'money', 'hint' => 'approved + completed'],
-            ['label' => 'Collected Against Bookings', 'value' => $collectedAgainst, 'type' => 'money', 'hint' => 'current ledger total'],
-            ['label' => 'Outstanding Against Bookings', 'value' => $outstandingValue, 'type' => 'money', 'hint' => 'current balance'],
-            ['label' => 'Average Reservation', 'value' => $average, 'type' => 'money', 'hint' => count($rows) . ' reservation' . (count($rows) === 1 ? '' : 's')],
+        usort($rows,static fn($a,$b)=>strcmp((string)$a['record_date'],(string)$b['record_date']));
+        $totalSales=$reservationValue+$stallValue;
+        $summaryCards=[
+            ['label'=>'Total Sales Value','value'=>$totalSales,'type'=>'money','hint'=>'venue + rentals'],
+            ['label'=>'Venue Reservations','value'=>$reservationValue,'type'=>'money','hint'=>'approved + completed'],
+            ['label'=>'Rentals','value'=>$stallValue,'type'=>'money','hint'=>'active + completed rentals'],
+            ['label'=>'Outstanding','value'=>$outstandingValue,'type'=>'money','hint'=>'combined current balance'],
         ];
-        $columns = [
-            ['key' => 'reference_no', 'label' => 'Reservation', 'type' => 'reservation'],
-            ['key' => 'client_name', 'label' => 'Client', 'type' => 'client'],
-            ['key' => 'event_start', 'label' => 'Event', 'type' => 'datetime'],
-            ['key' => 'reservation_type', 'label' => 'Type', 'type' => 'reservation_type'],
-            ['key' => 'display_status', 'label' => 'Status', 'type' => 'status'],
-            ['key' => 'payment_target', 'label' => 'Booking Value', 'type' => 'money'],
-            ['key' => 'ledger_amount_paid', 'label' => 'Collected', 'type' => 'money'],
-            ['key' => 'balance', 'label' => 'Balance', 'type' => 'money_emphasis'],
-            ['key' => 'source', 'label' => 'Source', 'type' => 'text_title'],
+        $columns=[
+            ['key'=>'record_date','label'=>'Date','type'=>'date_only'],['key'=>'record_reference','label'=>'Reference','type'=>'record_link'],
+            ['key'=>'record_client','label'=>'Client / Tenant','type'=>'client'],['key'=>'sales_type','label'=>'Type','type'=>'text_strong'],
+            ['key'=>'display_status','label'=>'Status','type'=>'status'],['key'=>'sales_value','label'=>'Sales','type'=>'money'],
+            ['key'=>'collected','label'=>'Collected','type'=>'money'],['key'=>'balance','label'=>'Balance','type'=>'money_emphasis'],
         ];
-        $reportNote = 'Reservation Sales is booking value by event date. The Collected column is the current ledger total against those bookings and may include payments received on a different date.';
+        $reportNote='Cancelled rentals are excluded from Rental Sales. Refunds do not reduce Sales a second time; they reduce Net Collections on the actual refund date and remain visible in the Cancellation & Refund report. Any amount retained by TLH is shown there for settlement/audit purposes only. Refundable Security Deposits are excluded.';
     }
 
     if ($report === 'daily') {
@@ -436,56 +430,78 @@ try {
             $term = '%' . $search . '%';
             array_push($params, $term, $term, $term, $term, $term, $term);
         }
-        $stmt = $pdo->prepare("SELECT c.*,r.id AS reservation_id,r.reference_no,r.client_name,r.phone,r.email,r.event_start,r.event_end,r.reservation_type,
-                COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.reservation_id=r.id),0) AS ledger_net_paid,
-                ca.full_name AS cancelled_by_name,ra.full_name AS refunded_by_name
+        $stmt = $pdo->prepare("SELECT c.cancelled_at,r.id AS record_id,r.reference_no AS record_reference,r.client_name AS record_client,r.phone,r.event_start AS record_date,
+                'Reservation' AS record_type,CONCAT('reservation-view.php?id=',r.id) AS record_href,
+                c.original_total AS original_value,c.cancellation_fee AS retained_value,c.paid_before_cancellation,
+                c.refunded_amount,c.refund_due,c.refund_status,
+                COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.reservation_id=r.id),0) AS ledger_net_paid
             FROM reservation_cancellations c
             INNER JOIN reservations r ON r.id=c.reservation_id
-            LEFT JOIN admins ca ON ca.id=c.cancelled_by
-            LEFT JOIN admins ra ON ra.id=c.refunded_by
-            WHERE " . implode(' AND ', $where) . "
-            ORDER BY c.cancelled_at DESC,c.id DESC");
+            WHERE " . implode(' AND ', $where));
         $stmt->execute($params);
         $rows = $stmt->fetchAll();
-        $fees = 0.0;
-        $refundsIssued = 0.0;
-        $pendingRefunds = 0.0;
-        $clientBalances = 0.0;
         foreach ($rows as &$row) {
             $row['pending_refund'] = max(0, round((float)$row['refund_due'] - (float)$row['refunded_amount'], 2));
-            $row['client_balance_due'] = max(0, round((float)$row['cancellation_fee'] - (float)$row['ledger_net_paid'], 2));
+            $row['client_balance_due'] = max(0, round((float)$row['retained_value'] - (float)$row['ledger_net_paid'], 2));
             $row['refund_status_label'] = match ((string)$row['refund_status']) {
                 'refunded' => 'Refunded',
                 'pending' => 'Refund Pending',
                 default => 'No Refund Due',
             };
-            $fees += (float)$row['cancellation_fee'];
-            $refundsIssued += (float)$row['refunded_amount'];
-            $pendingRefunds += (float)$row['pending_refund'];
-            $clientBalances += (float)$row['client_balance_due'];
         }
         unset($row);
+
+        if ($type === '') {
+            $rParams = [];
+            $rWhere = [$dateClause('rc.cancelled_at',$dateFrom,$dateTo,$rParams)];
+            if ($search !== '') {
+                $rWhere[] = '(rr.reference_no LIKE ? OR rr.client_name LIKE ? OR rr.contact_number LIKE ? OR rr.organization LIKE ? OR rc.refund_reference LIKE ? OR rc.cancellation_reason LIKE ? OR EXISTS(SELECT 1 FROM rental_items ri JOIN rentables x ON x.id=ri.rentable_id WHERE ri.rental_id=rr.id AND (x.code LIKE ? OR x.name LIKE ?)))';
+                $term = '%'.$search.'%';
+                array_push($rParams,$term,$term,$term,$term,$term,$term,$term,$term);
+            }
+            $rStmt = $pdo->prepare("SELECT rc.cancelled_at,rr.id AS record_id,rr.reference_no AS record_reference,rr.client_name AS record_client,rr.contact_number AS phone,rr.start_date AS record_date,
+                    'Rental' AS record_type,CONCAT('rental-view.php?id=',rr.id) AS record_href,
+                    rc.original_total AS original_value,rc.retained_amount AS retained_value,rc.paid_before_cancellation,
+                    rc.refund_amount AS refunded_amount,0 AS pending_refund,0 AS client_balance_due,
+                    CASE WHEN rc.refund_amount>0 THEN 'Refunded' ELSE 'No Refund' END AS refund_status_label
+                FROM rental_cancellations rc INNER JOIN rentals rr ON rr.id=rc.rental_id
+                WHERE ".implode(' AND ',$rWhere));
+            $rStmt->execute($rParams);
+            $rows = array_merge($rows,$rStmt->fetchAll());
+        }
+
+        usort($rows,static fn($a,$b)=>strcmp((string)$b['cancelled_at'],(string)$a['cancelled_at']));
+        $retainedValue = 0.0;
+        $refundsIssued = 0.0;
+        $pendingRefunds = 0.0;
+        $clientBalances = 0.0;
+        foreach ($rows as $row) {
+            $retainedValue += (float)($row['retained_value'] ?? 0);
+            $refundsIssued += (float)($row['refunded_amount'] ?? 0);
+            $pendingRefunds += (float)($row['pending_refund'] ?? 0);
+            $clientBalances += (float)($row['client_balance_due'] ?? 0);
+        }
         $summaryCards = [
-            ['label' => 'Cancellations', 'value' => count($rows), 'type' => 'number', 'hint' => 'selected period'],
-            ['label' => 'Cancellation Fees', 'value' => $fees, 'type' => 'money', 'hint' => 'policy charges'],
-            ['label' => 'Refunds Issued', 'value' => $refundsIssued, 'type' => 'money', 'hint' => 'recorded as returned'],
-            ['label' => 'Pending Refunds', 'value' => $pendingRefunds, 'type' => 'money', 'hint' => 'TLH still owes client'],
-            ['label' => 'Client Balance Due', 'value' => $clientBalances, 'type' => 'money', 'hint' => 'client still owes TLH'],
+            ['label' => 'Cancellations', 'value' => count($rows), 'type' => 'number', 'hint' => 'reservations + rentals'],
+            ['label' => 'Retained / Cancellation Value', 'value' => $retainedValue, 'type' => 'money', 'hint' => 'kept by TLH after cancellation'],
+            ['label' => 'Refunds Issued', 'value' => $refundsIssued, 'type' => 'money', 'hint' => 'money returned'],
+            ['label' => 'Pending Refunds', 'value' => $pendingRefunds, 'type' => 'money', 'hint' => 'reservation refunds still due'],
+            ['label' => 'Client Balance Due', 'value' => $clientBalances, 'type' => 'money', 'hint' => 'reservation cancellation balance'],
         ];
         $columns = [
             ['key' => 'cancelled_at', 'label' => 'Cancelled At', 'type' => 'datetime'],
-            ['key' => 'reference_no', 'label' => 'Reservation', 'type' => 'reservation'],
-            ['key' => 'client_name', 'label' => 'Client', 'type' => 'client'],
-            ['key' => 'event_start', 'label' => 'Event', 'type' => 'datetime'],
-            ['key' => 'original_total', 'label' => 'Original Value', 'type' => 'money'],
-            ['key' => 'cancellation_fee', 'label' => 'Cancellation Fee', 'type' => 'money'],
+            ['key' => 'record_reference', 'label' => 'Record', 'type' => 'record_link'],
+            ['key' => 'record_type', 'label' => 'Type', 'type' => 'text_strong'],
+            ['key' => 'record_client', 'label' => 'Client / Tenant', 'type' => 'client'],
+            ['key' => 'original_value', 'label' => 'Original Value', 'type' => 'money'],
+            ['key' => 'retained_value', 'label' => 'Retained / Charge', 'type' => 'money'],
             ['key' => 'paid_before_cancellation', 'label' => 'Paid Before Cancel', 'type' => 'money'],
             ['key' => 'refunded_amount', 'label' => 'Refunded', 'type' => 'money'],
             ['key' => 'pending_refund', 'label' => 'Refund Pending', 'type' => 'money'],
             ['key' => 'client_balance_due', 'label' => 'Client Balance', 'type' => 'money_emphasis'],
             ['key' => 'refund_status_label', 'label' => 'Settlement', 'type' => 'status'],
         ];
-        $reportNote = 'Pending Refund is money TLH still owes the client. Client Balance is money still due to TLH to complete the cancellation charge.';
+        $reportNote = 'Rental refunds are decided by Admin at cancellation and are recorded as negative rental-payment transactions. Cancelled rentals are excluded from Rental Sales, while refunds reduce Net Collections on the actual refund date. Amounts retained by TLH are shown here for settlement/audit purposes only and are not counted as Rental Sales. Security Deposits remain separate.';
     }
 
     if ($report === 'management') {
@@ -508,6 +524,29 @@ try {
         $salesByMonth = [];
         foreach ($salesStmt->fetchAll() as $item) $salesByMonth[$item['month_key']] = $item;
 
+        if ($type === '') {
+            $rentalSalesStmt=$pdo->prepare("SELECT month_key,SUM(rentals) rentals,SUM(rental_value) rental_value,SUM(rental_outstanding) rental_outstanding FROM (
+                SELECT DATE_FORMAT(rr.start_date,'%Y-%m') month_key,COUNT(*) rentals,
+                    COALESCE(SUM(rr.base_amount+COALESCE((SELECT SUM(rc.amount) FROM rental_charges rc WHERE rc.rental_id=rr.id),0)),0) rental_value,
+                    COALESCE(SUM(GREATEST(rr.base_amount+COALESCE((SELECT SUM(rc2.amount) FROM rental_charges rc2 WHERE rc2.rental_id=rr.id),0)-COALESCE((SELECT SUM(rp.amount) FROM rental_payments rp WHERE rp.rental_id=rr.id),0),0)),0) rental_outstanding
+                FROM rentals rr WHERE rr.status<>'cancelled' AND rr.billing_mode='one_time' AND DATE(rr.start_date) BETWEEN ? AND ? GROUP BY DATE_FORMAT(rr.start_date,'%Y-%m')
+                UNION ALL
+                SELECT DATE_FORMAT(bp.period_start,'%Y-%m') month_key,COUNT(*) rentals,
+                    COALESCE(SUM(bp.rent_amount+COALESCE((SELECT SUM(rc.amount) FROM rental_charges rc WHERE rc.billing_period_id=bp.id),0)),0) rental_value,
+                    COALESCE(SUM(GREATEST(0,
+                        (bp.rent_amount+COALESCE((SELECT SUM(rc2.amount) FROM rental_charges rc2 WHERE rc2.billing_period_id=bp.id),0))
+                        - GREATEST(0,LEAST(
+                            (bp.rent_amount+COALESCE((SELECT SUM(rc3.amount) FROM rental_charges rc3 WHERE rc3.billing_period_id=bp.id),0)),
+                            COALESCE((SELECT SUM(rp.amount) FROM rental_payments rp WHERE rp.rental_id=rr.id),0)
+                            - COALESCE((SELECT SUM(bp2.rent_amount+COALESCE((SELECT SUM(rc4.amount) FROM rental_charges rc4 WHERE rc4.billing_period_id=bp2.id),0)) FROM rental_billing_periods bp2 WHERE bp2.rental_id=rr.id AND bp2.period_no<bp.period_no),0)
+                        ))
+                    )),0) rental_outstanding
+                FROM rental_billing_periods bp JOIN rentals rr ON rr.id=bp.rental_id WHERE rr.status<>'cancelled' AND DATE(bp.period_start) BETWEEN ? AND ? GROUP BY DATE_FORMAT(bp.period_start,'%Y-%m')
+            ) x GROUP BY month_key");
+            $rentalSalesStmt->execute([$dateFrom,$dateTo,$dateFrom,$dateTo]);
+            foreach($rentalSalesStmt->fetchAll() as $item){$key=$item['month_key'];if(!isset($salesByMonth[$key]))$salesByMonth[$key]=[];$salesByMonth[$key]['stall_rentals']=(int)$item['rentals'];$salesByMonth[$key]['stall_value']=(float)$item['rental_value'];$salesByMonth[$key]['stall_outstanding']=(float)$item['rental_outstanding'];}
+        }
+
         $cancelParams = [$dateFrom, $dateTo];
         if ($type !== '') $cancelParams[] = $type;
         $cancelStmt = $pdo->prepare("SELECT DATE_FORMAT(c.cancelled_at,'%Y-%m') AS month_key,COUNT(*) AS cancellations
@@ -518,6 +557,15 @@ try {
         $cancelStmt->execute($cancelParams);
         $cancelByMonth = [];
         foreach ($cancelStmt->fetchAll() as $item) $cancelByMonth[$item['month_key']] = $item;
+        if ($type === '') {
+            $rentalCancelStmt = $pdo->prepare("SELECT DATE_FORMAT(cancelled_at,'%Y-%m') AS month_key,COUNT(*) AS cancellations FROM rental_cancellations WHERE DATE(cancelled_at) BETWEEN ? AND ? GROUP BY DATE_FORMAT(cancelled_at,'%Y-%m')");
+            $rentalCancelStmt->execute([$dateFrom,$dateTo]);
+            foreach ($rentalCancelStmt->fetchAll() as $item) {
+                $key = (string)$item['month_key'];
+                if (!isset($cancelByMonth[$key])) $cancelByMonth[$key] = ['month_key'=>$key,'cancellations'=>0];
+                $cancelByMonth[$key]['cancellations'] = (int)($cancelByMonth[$key]['cancellations'] ?? 0) + (int)$item['cancellations'];
+            }
+        }
 
         $noShowParams = [$dateFrom, $dateTo];
         if ($type !== '') $noShowParams[] = $type;
@@ -543,6 +591,12 @@ try {
         $paymentByMonth = [];
         foreach ($paymentStmt->fetchAll() as $item) $paymentByMonth[$item['month_key']] = $item;
 
+        if ($type === '') {
+            $rentalPayStmt=$pdo->prepare("SELECT DATE_FORMAT(paid_at,'%Y-%m') AS month_key,COALESCE(SUM(CASE WHEN amount>0 THEN amount ELSE 0 END),0) AS gross_collected,COALESCE(ABS(SUM(CASE WHEN amount<0 THEN amount ELSE 0 END)),0) AS refunds,COALESCE(SUM(amount),0) AS net_collections FROM rental_payments WHERE DATE(paid_at) BETWEEN ? AND ? GROUP BY DATE_FORMAT(paid_at,'%Y-%m')");
+            $rentalPayStmt->execute([$dateFrom,$dateTo]);
+            foreach($rentalPayStmt->fetchAll() as $item){$key=$item['month_key'];if(!isset($paymentByMonth[$key]))$paymentByMonth[$key]=['gross_collected'=>0,'refunds'=>0,'net_collections'=>0];foreach(['gross_collected','refunds','net_collections'] as $f)$paymentByMonth[$key][$f]=(float)($paymentByMonth[$key][$f]??0)+(float)$item[$f];}
+        }
+
         $cursor = new DateTimeImmutable($dateFrom . ' 00:00:00');
         $last = new DateTimeImmutable($dateTo . ' 00:00:00');
         $cursor = $cursor->modify('first day of this month');
@@ -557,20 +611,22 @@ try {
                 'month_key' => $key,
                 'month_label' => $cursor->format('F Y'),
                 'reservations' => (int)($salesMonth['reservations'] ?? 0),
+                'stall_rentals' => (int)($salesMonth['stall_rentals'] ?? 0),
                 'completed' => (int)($salesMonth['completed'] ?? 0),
                 'cancellations' => (int)($cancelMonth['cancellations'] ?? 0),
                 'no_shows' => (int)($noShowMonth['no_shows'] ?? 0),
-                'booking_value' => round((float)($salesMonth['booking_value'] ?? 0), 2),
+                'booking_value' => round((float)($salesMonth['booking_value'] ?? 0) + (float)($salesMonth['stall_value'] ?? 0), 2),
                 'gross_collected' => round((float)($paymentMonth['gross_collected'] ?? 0), 2),
                 'refunds' => round((float)($paymentMonth['refunds'] ?? 0), 2),
                 'net_collections' => round((float)($paymentMonth['net_collections'] ?? 0), 2),
-                'outstanding' => round((float)($salesMonth['outstanding'] ?? 0), 2),
+                'outstanding' => round((float)($salesMonth['outstanding'] ?? 0) + (float)($salesMonth['stall_outstanding'] ?? 0), 2),
             ];
             $cursor = $cursor->modify('+1 month');
         }
 
         $totals = [
             'reservations' => 0,
+            'stall_rentals' => 0,
             'completed' => 0,
             'cancellations' => 0,
             'no_shows' => 0,
@@ -581,11 +637,11 @@ try {
             'outstanding' => 0.0,
         ];
         foreach ($rows as $row) {
-            foreach (['reservations', 'completed', 'cancellations', 'no_shows'] as $key) $totals[$key] += (int)$row[$key];
+            foreach (['reservations', 'stall_rentals', 'completed', 'cancellations', 'no_shows'] as $key) $totals[$key] += (int)$row[$key];
             foreach (['booking_value', 'gross_collected', 'refunds', 'net_collections', 'outstanding'] as $key) $totals[$key] += (float)$row[$key];
         }
         $summaryCards = [
-            ['label' => 'Reservation Value', 'value' => $totals['booking_value'], 'type' => 'money', 'hint' => $totals['reservations'] . ' approved/completed'],
+            ['label' => 'Combined Sales Value', 'value' => $totals['booking_value'], 'type' => 'money', 'hint' => $totals['reservations'] . ' reservations + ' . $totals['stall_rentals'] . ' rentals'],
             ['label' => 'Gross Collected', 'value' => $totals['gross_collected'], 'type' => 'money', 'hint' => 'by Paid At date'],
             ['label' => 'Refunds', 'value' => $totals['refunds'], 'type' => 'money', 'hint' => 'returned to clients'],
             ['label' => 'Net Collections', 'value' => $totals['net_collections'], 'type' => 'money', 'hint' => 'gross less refunds'],
@@ -595,16 +651,17 @@ try {
         $columns = [
             ['key' => 'month_label', 'label' => 'Month', 'type' => 'text_strong'],
             ['key' => 'reservations', 'label' => 'Reservations', 'type' => 'number'],
+            ['key' => 'stall_rentals', 'label' => 'Rentals', 'type' => 'number'],
             ['key' => 'completed', 'label' => 'Completed', 'type' => 'number'],
             ['key' => 'cancellations', 'label' => 'Cancelled', 'type' => 'number'],
             ['key' => 'no_shows', 'label' => 'No Show', 'type' => 'number'],
-            ['key' => 'booking_value', 'label' => 'Booking Value', 'type' => 'money'],
+            ['key' => 'booking_value', 'label' => 'Combined Sales', 'type' => 'money'],
             ['key' => 'gross_collected', 'label' => 'Gross Collected', 'type' => 'money'],
             ['key' => 'refunds', 'label' => 'Refunds', 'type' => 'money'],
             ['key' => 'net_collections', 'label' => 'Net Collections', 'type' => 'money_emphasis'],
             ['key' => 'outstanding', 'label' => 'Outstanding', 'type' => 'money'],
         ];
-        $reportNote = 'Management Summary intentionally keeps event-date booking value separate from payment-date collections. Outstanding is the current balance on approved/completed bookings in the selected event period.';
+        $reportNote = 'Management Summary combines venue reservation value and rental value while keeping sales-date value separate from payment-date collections. Outstanding includes both modules.';
     }
 } catch (Throwable $e) {
     $rows = [];
@@ -628,6 +685,11 @@ $exportValue = static function (array $column, array $row) use ($spreadsheetSafe
     $value = $row[$key] ?? '';
     if (in_array($typeName, ['money', 'money_emphasis', 'signed_money'], true)) {
         return number_format((float)$value, 2, '.', '');
+    }
+    if ($typeName === 'date_only') {
+        if (!$value) return '';
+        $ts = strtotime((string)$value);
+        return $ts ? date('Y-m-d', $ts) : $spreadsheetSafeText((string)$value);
     }
     if ($typeName === 'datetime' || $typeName === 'datetime_optional') {
         if (!$value) return '';
@@ -815,7 +877,7 @@ include __DIR__ . '/_header.php';
     <?php endforeach; ?>
   </section>
 
-  <section class="panel reports-table-panel">
+  <section class="panel reports-table-panel report-panel-<?= e($report) ?>">
     <div class="reports-table-head">
       <div>
         <span class="dashboard-section-kicker">Report Details</span>
@@ -831,8 +893,8 @@ include __DIR__ . '/_header.php';
 
     <div class="reports-accounting-note"><strong>Accounting basis:</strong> <?= e($reportNote) ?></div>
 
-    <div class="reports-table-scroll">
-      <table class="reports-table mobile-card-table reports-mobile-card-table">
+    <div class="reports-table-scroll report-table-scroll-<?= e($report) ?>">
+      <table class="reports-table mobile-card-table reports-mobile-card-table report-table-<?= e($report) ?>">
         <thead><tr><?php foreach ($columns as $column): ?><th><?= e((string)$column['label']) ?></th><?php endforeach; ?></tr></thead>
         <tbody>
         <?php foreach ($rows as $row): ?>
@@ -842,8 +904,12 @@ include __DIR__ . '/_header.php';
               <td class="report-cell-<?= e($cellType) ?>" data-label="<?= e((string)$column['label']) ?>">
                 <?php if ($cellType === 'reservation'): ?>
                   <a class="report-reservation-link" href="reservation-view.php?id=<?= (int)($row['reservation_id'] ?? $row['id'] ?? 0) ?>"><strong><?= e((string)$value) ?></strong><?php if (!empty($row['batch_reference'])): ?><small><?= e((string)$row['batch_reference']) ?></small><?php endif; ?></a>
+                <?php elseif ($cellType === 'record_link'): ?>
+                  <a class="report-reservation-link" href="<?= e((string)($row['record_href'] ?? '#')) ?>"><strong><?= e((string)$value) ?></strong></a>
                 <?php elseif ($cellType === 'client'): ?>
                   <strong><?= e((string)$value) ?></strong><?php if (!empty($row['phone'])): ?><small><?= e((string)$row['phone']) ?></small><?php endif; ?>
+                <?php elseif ($cellType === 'date_only'): ?>
+                  <?php if ($value): ?><span><?= e(date('M j, Y', strtotime((string)$value))) ?></span><?php else: ?><span class="muted">-</span><?php endif; ?>
                 <?php elseif ($cellType === 'datetime' || $cellType === 'datetime_optional'): ?>
                   <?php if ($value): ?><span><?= e(date('M j, Y', strtotime((string)$value))) ?></span><small><?= e(date('g:i A', strtotime((string)$value))) ?></small><?php else: ?><span class="muted">-</span><?php endif; ?>
                 <?php elseif ($cellType === 'money' || $cellType === 'money_emphasis'): ?>

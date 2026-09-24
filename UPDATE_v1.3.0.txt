@@ -1,0 +1,73 @@
+THE LEISURE HUB v1.3.0 - Generic Rentals Engine
+
+Major upgrade
+-------------
+The Food Stall Rental module is now a generic Rentals system. Existing Food Stall
+spaces, rentals, payments, flexible dates, extensions, complimentary rentals, and
+utility charges are automatically copied into the new generic rental tables.
+Legacy tables are preserved for rollback/history and the old Food Stall URLs redirect
+to the new Rentals pages.
+
+Admin navigation
+----------------
+- Rental Calendar remains directly below Booking Calendar.
+- Rentals replaces Food Stall Rentals directly below Batch Reservations.
+- Venue Management > Manage Rentables configures the catalog.
+
+Rentable catalog
+----------------
+Admin can add rentables without changing PHP code:
+- Food stall spaces
+- Restaurant / cafe / kiosk / commercial spaces
+- Tents
+- Chairs
+- Tables
+- Other future spaces/items
+
+Each rentable configures:
+- Category
+- Exclusive or quantity-based availability
+- Total quantity (when quantity-based)
+- One-time/agreed or monthly recurring billing
+- Flexible-date support
+- Electricity/Water applicability
+- Active/inactive status
+
+Pricing remains manual. No default rental price is stored in the catalog.
+
+Rental transactions
+-------------------
+- One rental may contain multiple rentables when they use the same billing mode.
+- Quantity-based rentables check remaining inventory on every occupied date.
+- Exclusive spaces prevent overlapping rentals.
+- Continuous and flexible dates are supported when allowed by the rentable.
+- Complimentary / free rentals remain supported.
+- Payments, extensions, early termination, permanent delete, print, and calendar are supported.
+- Additional configurable charge types can be created by Admin.
+- Optional Security Deposit requirement with separate receipt/refund history. Deposits do not count as Sales or rental Collections.
+
+Commercial / long-term spaces
+-----------------------------
+Monthly recurring rentals generate billing periods automatically.
+- Monthly rent is manually entered by Admin.
+- Electricity and Water can be finalized per billing period.
+- Rental extension acts as renewal and adds new monthly billing periods.
+- Rentals ending within 30 days display For Renewal.
+
+Reports
+-------
+- Collections now use the generic Rental payment ledger.
+- One-time Rental Sales are recognized by rental start date.
+- Monthly Rental Sales are recognized by monthly billing-period date.
+- Venue Reservation Sales remain unchanged.
+
+Database
+--------
+Automatic migration: database/upgrade_v1.3.0_generic_rentals.sql
+The migration creates the new generic tables and the application copies existing
+Food Stall history into them without deleting the legacy data.
+
+Deployment
+----------
+Keep your existing config/local.php on the server. Back up the database before the
+first v1.3.0 deployment because this is a structural rental-module upgrade.

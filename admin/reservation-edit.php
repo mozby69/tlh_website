@@ -164,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Purpose may not exceed 150 characters.';
     }
     if ($guestCount < 1 || reservation_package_for_guests($guestCount) === null) {
-        $errors[] = 'Guest count must be between 1 and 300 guests.';
+        $errors[] = 'Guest count must be between 1 and 400 guests.';
     }
     if (!array_key_exists($coolingOption, reservation_cooling_options())) {
         $errors[] = 'Choose Fan with Lights or Aircon with Lights.';
@@ -391,7 +391,7 @@ include __DIR__ . '/_header.php';
     </div>
 
     <div class="form-group"><label>Purpose</label><input name="purpose" maxlength="150" value="<?= e($form['purpose']) ?>"></div>
-    <div class="form-group"><label>Expected Guests *</label><input type="number" min="1" max="300" name="guest_count" value="<?= e($form['guest_count']) ?>" data-guest-count required><span class="field-help">1–300 guests. The package is selected automatically.</span></div>
+    <div class="form-group"><label>Expected Guests *</label><input type="number" min="1" max="400" name="guest_count" value="<?= e($form['guest_count']) ?>" data-guest-count required><span class="field-help">1–400 guests. The package is selected automatically.</span></div>
     <div class="form-group"><label>Cooling Option *</label><select name="cooling_option" data-cooling-option required><?php foreach (reservation_cooling_options() as $value => $label): ?><option value="<?= e($value) ?>" <?= $form['cooling_option'] === $value ? 'selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?></select></div>
     <div class="form-group full pricing-addons"><label>Additional Services</label><label class="checkbox-option"><input type="checkbox" name="shower_room_addon" value="1" data-shower-room <?= $form['shower_room_addon'] === '1' ? 'checked' : '' ?>><span>Shower Room — <?= money($pricingConfig['shower_room_fee']) ?> per reservation</span></label><label class="checkbox-option"><input type="checkbox" name="shower_room_complimentary" value="1" data-shower-room-complimentary <?= $form['shower_room_complimentary'] === '1' ? 'checked' : '' ?>><span>Complimentary Shower Room — waive the shower fee</span></label><label class="checkbox-option"><input type="checkbox" name="equipment_bundle_addon" value="1" data-equipment-bundle <?= $form['equipment_bundle_addon'] === '1' ? 'checked' : '' ?>><span data-equipment-bundle-label>Shot clocks, scoreboard, controller, and sound system — <?= money($pricingConfig['equipment_bundle_fee']) ?> per hour for regular bookings</span></label><label class="checkbox-option"><input type="checkbox" name="equipment_bundle_complimentary" value="1" data-equipment-bundle-complimentary <?= $form['equipment_bundle_complimentary'] === '1' ? 'checked' : '' ?>><span>Complimentary Equipment Bundle — waive the hourly equipment fee</span></label></div>
 

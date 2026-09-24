@@ -1,0 +1,18 @@
+TLH v1.2.148 - Flexible Dates for Food Stall Rentals
+
+New:
+- Food Stall Rentals can use Continuous Dates or Flexible Dates.
+- Flexible mode lets Admin add individual non-consecutive rental dates.
+- One manually entered rental price covers the full flexible schedule.
+- Conflict checking blocks only the selected dates for flexible rentals.
+- Existing continuous rentals remain unchanged.
+- Editing can switch between continuous and flexible schedules before final billing.
+- Rental detail pages show all selected dates.
+- Ending a flexible rental early releases future selected dates while keeping them in audit history.
+- Payments, final Electricity/Water billing, Sales, and password-protected deletion continue to work as one rental transaction.
+
+Database:
+- Adds food_stall_rentals.schedule_type.
+- Adds food_stall_rental_dates.
+- Automatic migration runs from includes/functions.php.
+- Manual SQL is included if the production database user cannot ALTER/CREATE tables.

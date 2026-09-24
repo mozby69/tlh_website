@@ -1,4 +1,4 @@
-# TLH v1.2.71 — LAN Deployment Checklist
+# TLH v1.3.6 — LAN Deployment Checklist
 
 This build is intended for a trusted local network. Normal HTTP is intentionally allowed and application rate limiting is intentionally not enabled yet.
 
@@ -49,11 +49,13 @@ From a second LAN device, confirm:
 
 - Home / Availability / Reserve / Track open normally.
 - Admin login and Dashboard work.
-- Create one unpaid dummy single reservation and one dummy batch.
+- Create one unpaid dummy single reservation, one dummy batch, and one dummy rental.
+- For the dummy rental, test Continuous and Flexible Dates, then verify the Rental Calendar.
 - Record and verify a test payment/reference only if using a disposable test database; otherwise avoid financial test data in the live database.
 - Test a discount, a reschedule, and the Enable Past Date Selection switch.
 - Delete unpaid dummy records.
 - Export a report and verify the file opens correctly.
+- Open the site once on a device that had an older TLH PWA build and verify the updated CSS/JavaScript loads after refresh.
 - Create and download a database backup.
 
 Once these pass, the LAN deployment is ready for day-to-day use.

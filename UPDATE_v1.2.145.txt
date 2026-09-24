@@ -1,0 +1,19 @@
+THE LEISURE HUB v1.2.145 - Food Stall Rental Early Termination
+
+Changes:
+- Adds End Rental Early for active Food Stall Rentals that have already started.
+- Admin enters Actual End Date, final agreed Stall Rental Amount, and reason.
+- Preserves the original scheduled end date for audit history.
+- Stores who ended the rental early and when.
+- Immediately opens Electricity/Water final billing after early termination.
+- Shortens the active rental end date so the stall becomes available for later dates.
+- Prevents standard Edit Rental from changing the record after early termination/final billing begins.
+- Combined Sales automatically uses the revised stall rental amount plus final utilities.
+
+Database:
+The application attempts the v1.2.145 schema update automatically.
+If the web database account cannot ALTER TABLE, run:
+  database/upgrade_v1.2.145_food_stall_early_end.sql
+
+Install:
+Copy these files over the matching paths in your existing TLH v1.2.144 installation.

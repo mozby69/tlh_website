@@ -1,0 +1,14 @@
+TLH v1.2.154 - Food Stall Rental Extension
+
+Added:
+- Extend Rental action for active Food Stall Rentals.
+- Continuous rentals: choose a later end date.
+- Flexible rentals: add one or more later individual dates.
+- Conflict checking before saving extensions.
+- Admin manually enters the revised total rental amount; no automatic prorating.
+- Existing payments are preserved and the outstanding balance is recalculated.
+- Full extension audit history with previous/new dates, previous/new amounts, reason, administrator, and timestamp.
+
+Database:
+- food_stall_rental_extensions table is created automatically.
+- Run database/upgrade_v1.2.154_food_stall_rental_extensions.sql manually only if the application database user cannot CREATE TABLE.

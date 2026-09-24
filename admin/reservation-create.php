@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Email address is invalid.';
     }
     if ($guests < 1 || reservation_package_for_guests($guests) === null) {
-        $errors[] = 'Guest count must be between 1 and 300 guests.';
+        $errors[] = 'Guest count must be between 1 and 400 guests.';
     }
     if (!array_key_exists($coolingOption, reservation_cooling_options())) {
         $errors[] = 'Choose Fan with Lights or Aircon with Lights.';
@@ -377,7 +377,7 @@ include __DIR__ . '/_header.php';
 <section class="reservation-step-panel" data-form-step="3" aria-labelledby="adminStepDetailsTitle" hidden>
 <div class="reservation-step-title"><span>Step 3 of 4</span><h3 id="adminStepDetailsTitle">Booking details and pricing</h3><p>Enter the client information, commercial options, and any optional services.</p></div>
 <div class="form-grid">
-<div class="form-group"><label>Expected Guests *</label><input type="number" min="1" max="300" name="guest_count" value="<?= e($_POST['guest_count'] ?? '') ?>" data-guest-count required><span class="field-help">Accepted range: 1–300 guests. The package is selected automatically.</span></div>
+<div class="form-group"><label>Expected Guests *</label><input type="number" min="1" max="400" name="guest_count" value="<?= e($_POST['guest_count'] ?? '') ?>" data-guest-count required><span class="field-help">Accepted range: 1–400 guests. The package is selected automatically.</span></div>
 <div class="form-group"><label>Cooling Option *</label><select name="cooling_option" data-cooling-option required><?php foreach (reservation_cooling_options() as $value => $label): ?><option value="<?= e($value) ?>" <?= $selectedCooling === $value ? 'selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?></select></div>
 <div class="form-group full"><div class="package-preview" data-package-preview aria-live="polite"><span>Package</span><strong data-price-package>Enter guest count</strong><b data-price-total>—</b><p data-price-message>Enter the expected guests to identify the applicable package.</p></div></div>
 <div class="form-group"><label>Client / Contact Name *</label><input name="client_name" value="<?= e($_POST['client_name'] ?? '') ?>" required></div>

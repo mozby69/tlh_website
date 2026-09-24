@@ -1,0 +1,8 @@
+THE LEISURE HUB v1.3.9
+
+Sales / cancellation accounting correction:
+- Cancelled rentals are excluded from Rental Sales.
+- Rental refunds no longer appear as negative Sales adjustments.
+- Refunds continue to reduce Net Collections on the actual refund date.
+- Cancellation & Refunds continues to show original value, refunded amount, and retained amount for audit.
+- Management Summary rental Sales uses the same logic.

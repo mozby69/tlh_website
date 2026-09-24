@@ -1,0 +1,17 @@
+THE LEISURE HUB v1.3.1 - Simplified Rental Form
+
+This update simplifies Admin > Rentals > New Rental without changing rental accounting or availability rules.
+
+Changes:
+- Compact Client row.
+- Smaller rentable rows with quantity hidden for exclusive spaces.
+- Complimentary / Free moved to a compact inline option.
+- Technical billing-mode summary hidden unless selected rentables conflict.
+- Compact Base Total / Monthly Base display.
+- Schedule section shortened; monthly rentals use Lease Start / Lease End labels automatically.
+- Initial Payment remains collapsed until Admin chooses Record payment now.
+- Security Deposit and Notes moved under More Options.
+- Complimentary rentals hide Initial Payment and keep base charges at P0.00.
+- Mobile form stacks cleanly.
+
+No database migration is required.

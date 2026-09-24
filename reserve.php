@@ -60,13 +60,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $selectedCooling = $coolingOption;
     $showerRoom = isset($_POST['shower_room_addon']);
     $equipmentBundle = isset($_POST['equipment_bundle_addon']);
-    $setupMinutes = $type === 'event' ? max(0, (int)($_POST['setup_minutes'] ?? 0)) : 0;
-    $cleanupMinutes = $type === 'event' ? max(0, (int)($_POST['cleanup_minutes'] ?? 0)) : 0;
+    $setupMinutes = $type === 'event' ? (int)($_POST['setup_minutes'] ?? 0) : 0;
+    $cleanupMinutes = $type === 'event' ? (int)($_POST['cleanup_minutes'] ?? 0) : 0;
+    $allowedSetupMinutes = [0, 30, 60, 120, 180];
+    $allowedCleanupMinutes = [0, 30, 60, 120];
     $additionalRequests = trim($_POST['additional_requests'] ?? '');
     $termsAccepted = isset($_POST['terms']);
 
     if (!in_array($type, ['basketball', 'volleyball', 'event'], true)) {
         $errors[] = 'Please choose a valid reservation type.';
+    }
+    if ($type === 'event' && !in_array($setupMinutes, $allowedSetupMinutes, true)) {
+        $errors[] = 'Please choose a valid setup allowance.';
+    }
+    if ($type === 'event' && !in_array($cleanupMinutes, $allowedCleanupMinutes, true)) {
+        $errors[] = 'Please choose a valid cleanup allowance.';
     }
     if ($clientName === '') {
         $errors[] = 'Client or contact name is required.';
@@ -78,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'A mobile number is required.';
     }
     if ($guestCount < 1 || reservation_package_for_guests($guestCount) === null) {
-        $errors[] = 'Guest count must be between 1 and 300 guests.';
+        $errors[] = 'Guest count must be between 1 and 400 guests.';
     }
     if (!array_key_exists($coolingOption, reservation_cooling_options())) {
         $errors[] = 'Please choose Fan with Lights or Aircon with Lights.';
@@ -416,7 +424,7 @@ include __DIR__ . '/includes/header.php';
 <section class="reservation-step-panel" data-form-step="3" aria-label="Booking details" hidden>
 
 <div class="form-grid">
-<div class="form-group"><label>Expected Guests *</label><input type="number" min="1" max="300" name="guest_count" value="<?= e($_POST['guest_count'] ?? '') ?>" data-guest-count required></div>
+<div class="form-group"><label>Expected Guests *</label><input type="number" min="1" max="400" name="guest_count" value="<?= e($_POST['guest_count'] ?? '') ?>" data-guest-count required></div>
 <div class="form-group"><label>Cooling Option *</label><select name="cooling_option" data-cooling-option required><?php foreach (reservation_cooling_options() as $value => $label): ?><option value="<?= e($value) ?>" <?= $selectedCooling === $value ? 'selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?></select></div>
 <div class="form-group full"><div class="package-preview" data-package-preview aria-live="polite"><span>Package</span><strong data-price-package>Enter guest count</strong><b data-price-total>—</b><p data-price-message>Enter your expected guests to identify the applicable package.</p></div></div>
 <div class="form-group"><label>Client / Contact Name *</label><input name="client_name" value="<?= e($_POST['client_name'] ?? '') ?>" autocomplete="name" required></div>

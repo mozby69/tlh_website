@@ -14,8 +14,9 @@ $adminPageTitle = $adminPageTitle ?? 'Dashboard';
 $currentAdminPage = basename($_SERVER['PHP_SELF']);
 $adminBodyPageClass = 'admin-page-' . preg_replace('/[^a-z0-9]+/i', '-', pathinfo($currentAdminPage, PATHINFO_FILENAME));
 $admin = current_admin();
-$adminNotificationUnread = admin_notification_unread_count();
-$adminNotificationRecent = admin_recent_notifications(8);
+$adminIsCalendarViewer = is_calendar_viewer();
+$adminNotificationUnread = $adminIsCalendarViewer ? 0 : admin_notification_unread_count();
+$adminNotificationRecent = $adminIsCalendarViewer ? [] : admin_recent_notifications(8);
 $adminName = trim((string)($admin['name'] ?? 'Administrator'));
 $adminInitial = strtoupper(substr($adminName, 0, 1));
 if ($adminInitial === '') {
@@ -61,11 +62,11 @@ if ($adminInitial === '') {
   <link rel="stylesheet" href="../assets/css/tokens.css?v=<?= (int)@filemtime(__DIR__ . '/../assets/css/tokens.css') ?>">
   <link rel="stylesheet" href="../assets/css/modern-admin.css?v=<?= (int)@filemtime(__DIR__ . '/../assets/css/modern-admin.css') ?>">
 </head>
-<body class="admin-body <?= e($adminBodyPageClass) ?>" data-admin-page-title="<?= e($adminPageTitle) ?>">
+<body class="admin-body <?= e($adminBodyPageClass) ?><?= $adminIsCalendarViewer ? ' admin-calendar-viewer' : '' ?>" data-admin-page-title="<?= e($adminPageTitle) ?>">
 <div class="admin-shell<?= !empty($adminCalendarOnly) ? ' admin-shell-calendar-only' : '' ?>" data-admin-shell>
   <aside class="admin-sidebar" id="admin-sidebar" data-admin-sidebar aria-label="Admin menu">
     <div class="admin-sidebar-head">
-      <a class="brand admin-brand" href="index.php" title="Admin Dashboard">
+      <a class="brand admin-brand" href="<?= $adminIsCalendarViewer ? 'booking-calendar.php' : 'index.php' ?>" title="<?= $adminIsCalendarViewer ? 'Booking Calendar' : 'Admin Dashboard' ?>">
         <img class="brand-logo brand-logo-admin" src="../assets/img/tlh-logo.png" width="1091" height="722" decoding="async" alt="The Leisure Hub logo">
         <span class="admin-brand-copy"><strong>Admin Portal</strong><small>The Leisure Hub</small></span>
       </a>
@@ -73,17 +74,34 @@ if ($adminInitial === '') {
     </div>
 
     <nav class="admin-nav" aria-label="Admin navigation">
+      <?php if ($adminIsCalendarViewer): ?>
+        <div class="admin-nav-group" aria-labelledby="admin-nav-calendar-viewer">
+          <span class="admin-nav-group-title" id="admin-nav-calendar-viewer">Calendar Access</span>
+          <a class="<?= $currentAdminPage === 'booking-calendar.php' ? 'active' : '' ?>" href="booking-calendar.php" title="Booking Calendar"><span class="admin-nav-icon" aria-hidden="true">▦</span><span class="admin-nav-label">Booking Calendar</span></a>
+          <a class="<?= in_array($currentAdminPage, ['rental-calendar.php','rental-view-readonly.php'], true) ? 'active' : '' ?>" href="rental-calendar.php" title="Rental Calendar"><span class="admin-nav-icon" aria-hidden="true">▦</span><span class="admin-nav-label">Rental Calendar</span></a>
+        </div>
+        <div class="admin-nav-group" aria-labelledby="admin-nav-calendar-viewer-links">
+          <span class="admin-nav-group-title" id="admin-nav-calendar-viewer-links">Website</span>
+          <a href="../index.php" target="_blank" rel="noopener" title="View Website"><span class="admin-nav-icon" aria-hidden="true">↗</span><span class="admin-nav-label">View Website</span></a>
+        </div>
+      <?php else: ?>
       <div class="admin-nav-group" aria-labelledby="admin-nav-main">
         <span class="admin-nav-group-title" id="admin-nav-main">Main</span>
         <a class="<?= $currentAdminPage === 'index.php' ? 'active' : '' ?>" href="index.php" title="Dashboard"><span class="admin-nav-icon" aria-hidden="true">▦</span><span class="admin-nav-label">Dashboard</span></a>
         <a class="<?= $currentAdminPage === 'booking-calendar.php' ? 'active' : '' ?>" href="booking-calendar.php" title="Booking Calendar"><span class="admin-nav-icon" aria-hidden="true">▦</span><span class="admin-nav-label">Booking Calendar</span></a>
+        <?php if (is_admin()): ?>
+          <a class="<?= $currentAdminPage === 'rental-calendar.php' ? 'active' : '' ?>" href="rental-calendar.php" title="Rental Calendar"><span class="admin-nav-icon" aria-hidden="true">▦</span><span class="admin-nav-label">Rental Calendar</span></a>
+        <?php endif; ?>
         <a class="admin-nav-primary <?= in_array($currentAdminPage, ['reservation-create.php','batch-reservation-create.php'], true) ? 'active' : '' ?>" href="reservation-create.php" title="Reserve"><span class="admin-nav-icon" aria-hidden="true">＋</span><span class="admin-nav-label">Reserve</span></a>
       </div>
 
       <div class="admin-nav-group" aria-labelledby="admin-nav-reservations">
         <span class="admin-nav-group-title" id="admin-nav-reservations">Reservations</span>
-        <a class="<?= in_array($currentAdminPage, ['reservations.php','reservation-view.php','reservation-edit.php','reservation-reschedule.php','reservation-extend.php','reservation-cancel.php','reservation-print.php'], true) && empty($bookingIsArchived) && empty($bookingIsCancelled) && empty($bookingNeedsResolution) ? 'active' : '' ?>" href="reservations.php" title="Reservations"><span class="admin-nav-icon" aria-hidden="true">◷</span><span class="admin-nav-label">Reservations</span></a>
+        <a class="<?= in_array($currentAdminPage, ['reservations.php','reservation-view.php','reservation-edit.php','reservation-reschedule.php','reservation-extend.php','reservation-cancel.php','reservation-delete.php','reservation-print.php'], true) && empty($bookingIsArchived) && empty($bookingIsCancelled) && empty($bookingNeedsResolution) ? 'active' : '' ?>" href="reservations.php" title="Reservations"><span class="admin-nav-icon" aria-hidden="true">◷</span><span class="admin-nav-label">Reservations</span></a>
         <a class="<?= in_array($currentAdminPage, ['batch-reservations.php','batch-reservation-view.php','batch-reservation-print.php'], true) ? 'active' : '' ?>" href="batch-reservations.php" title="Batch Reservations"><span class="admin-nav-icon" aria-hidden="true">≋</span><span class="admin-nav-label">Batch Reservations</span></a>
+        <?php if (is_admin()): ?>
+          <a class="<?= in_array($currentAdminPage, ['rentals.php','rental-create.php','rental-view.php','rental-cancel.php','rental-delete.php','rental-extend.php','rental-print.php'], true) ? 'active' : '' ?>" href="rentals.php" title="Rentals"><span class="admin-nav-icon" aria-hidden="true">▤</span><span class="admin-nav-label">Rentals</span></a>
+        <?php endif; ?>
         <a class="<?= $currentAdminPage === 'needs-resolution.php' || !empty($bookingNeedsResolution) ? 'active' : '' ?>" href="needs-resolution.php" title="Needs Resolution"><span class="admin-nav-icon" aria-hidden="true">!</span><span class="admin-nav-label">Needs Resolution</span></a>
         <a class="<?= $currentAdminPage === 'cancelled.php' || !empty($bookingIsCancelled) ? 'active' : '' ?>" href="cancelled.php" title="Cancelled"><span class="admin-nav-icon" aria-hidden="true">⊘</span><span class="admin-nav-label">Cancelled</span></a>
         <a class="<?= in_array($currentAdminPage, ['archives.php'], true) || (!empty($bookingIsArchived) && empty($bookingIsCancelled)) ? 'active' : '' ?>" href="archives.php" title="Archives"><span class="admin-nav-icon" aria-hidden="true">▧</span><span class="admin-nav-label">Archives</span></a>
@@ -106,6 +124,7 @@ if ($adminInitial === '') {
         <a class="<?= $currentAdminPage === 'tenants.php' ? 'active' : '' ?>" href="tenants.php" title="Stores & Tenants"><span class="admin-nav-icon" aria-hidden="true">▥</span><span class="admin-nav-label">Stores &amp; Tenants</span></a>
         <?php if (is_admin()): ?>
           <a class="<?= $currentAdminPage === 'rates-settings.php' ? 'active' : '' ?>" href="rates-settings.php" title="Rates Settings"><span class="admin-nav-icon" aria-hidden="true">₱</span><span class="admin-nav-label">Rates Settings</span></a>
+          <a class="<?= in_array($currentAdminPage, ['rentables.php','rental-categories.php','rental-charge-types.php'], true) ? 'active' : '' ?>" href="rentables.php" title="Manage Rentables"><span class="admin-nav-icon" aria-hidden="true">▤</span><span class="admin-nav-label">Manage Rentables</span></a>
         <?php endif; ?>
       </div>
 
@@ -127,12 +146,13 @@ if ($adminInitial === '') {
         <?php endif; ?>
         <a href="../index.php" target="_blank" rel="noopener" title="View Website"><span class="admin-nav-icon" aria-hidden="true">↗</span><span class="admin-nav-label">View Website</span></a>
       </div>
+      <?php endif; ?>
     </nav>
 
     <div class="admin-user">
       <div class="admin-user-profile">
         <span class="admin-user-avatar" aria-hidden="true"><?= e($adminInitial) ?></span>
-        <span class="admin-user-copy"><strong><?= e($adminName) ?></strong><span><?= e(ucfirst((string)$admin['role'])) ?></span></span>
+        <span class="admin-user-copy"><strong><?= e($adminName) ?></strong><span><?= e(admin_role_label((string)$admin['role'])) ?></span></span>
       </div>
       <form class="admin-signout-form" method="post" action="logout.php">
         <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
@@ -181,7 +201,7 @@ if ($adminInitial === '') {
         </div>
       </div>
     <?php endif; ?>
-    <?php if (!empty($hideAdminTopbar)): ?>
+    <?php if (!empty($hideAdminTopbar) && !$adminIsCalendarViewer): ?>
       <div class="admin-notification-wrap admin-notification-floating" data-admin-notifications>
         <button class="admin-notification-bell" type="button" data-notification-toggle aria-expanded="false" aria-label="Notifications<?= $adminNotificationUnread > 0 ? ', ' . $adminNotificationUnread . ' unread' : '' ?>" title="Notifications"><span aria-hidden="true">&#128276;</span><strong class="admin-notification-count<?= $adminNotificationUnread > 0 ? '' : ' is-empty' ?>" data-notification-count><?= $adminNotificationUnread ?></strong></button>
         <div class="admin-notification-popover" data-notification-popover hidden>

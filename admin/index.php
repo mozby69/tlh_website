@@ -124,7 +124,7 @@ try {
     $metrics['cancellation_attention'] = count($cancellationAttention);
     $cancellationAttention = array_slice($cancellationAttention, 0, 5);
 
-    $metrics['month_collected'] = (float)$pdo->query("SELECT COALESCE(SUM(amount),0) FROM payments WHERE YEAR(paid_at)=YEAR(CURDATE()) AND MONTH(paid_at)=MONTH(CURDATE())")->fetchColumn();
+    $metrics['month_collected'] = (float)$pdo->query("SELECT (SELECT COALESCE(SUM(amount),0) FROM payments WHERE YEAR(paid_at)=YEAR(CURDATE()) AND MONTH(paid_at)=MONTH(CURDATE())) + (SELECT COALESCE(SUM(amount),0) FROM rental_payments WHERE YEAR(paid_at)=YEAR(CURDATE()) AND MONTH(paid_at)=MONTH(CURDATE()))")->fetchColumn();
     $metrics['unread_alerts'] = admin_notification_unread_count();
 
 } catch (Throwable $e) {
@@ -254,7 +254,7 @@ include __DIR__ . '/_header.php';
     <div class="dashboard-snapshot-card"><span>Today’s Schedule</span><strong><?= $metrics['today'] ?></strong><small>operational reservations</small></div>
     <div class="dashboard-snapshot-card"><span>Upcoming 7 Days</span><strong><?= $metrics['next_7_days'] ?></strong><small>secured reservations</small></div>
     <div class="dashboard-snapshot-card"><span>Outstanding Balance</span><strong><?= money($metrics['outstanding_balance']) ?></strong><small>across <?= $metrics['outstanding_count'] ?> reservation<?= $metrics['outstanding_count'] === 1 ? '' : 's' ?></small></div>
-    <div class="dashboard-snapshot-card"><span>Payments This Month</span><strong><?= money($metrics['month_collected']) ?></strong><small>net payment ledger total</small></div>
+    <div class="dashboard-snapshot-card"><span>Net Collected This Month</span><strong><?= money($metrics['month_collected']) ?></strong><small>payments less refunds · reservations + rentals</small></div>
   </div>
 </section>
 

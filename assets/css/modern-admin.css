@@ -2764,3 +2764,1202 @@ body.is-navigating::before {
 @media (max-width: 390px) {
   .admin-user-account-actions { grid-template-columns: 1fr !important; }
 }
+
+
+/* ========================================================================== 
+   v1.2.146 — Compact reports / tablet table / print cleanup
+   Keeps reports readable on tablet widths instead of expanding every row into
+   a large mobile card. Phone layouts retain the card presentation.
+   ========================================================================== */
+.reports-summary {
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.report-summary-card {
+  min-height: 92px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  box-shadow: 0 5px 16px rgba(7,25,47,.035);
+}
+.report-summary-card::after {
+  width: 62px;
+  height: 62px;
+  right: -24px;
+  top: -24px;
+}
+.report-summary-card strong {
+  margin-top: 7px;
+  font-size: clamp(1.18rem,1.8vw,1.5rem);
+}
+.report-summary-card small { margin-top: 6px; }
+
+.reports-table-head {
+  padding: 16px 18px 12px;
+  gap: 14px;
+}
+.reports-export-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  width: auto;
+}
+.reports-export-actions .btn,
+.reports-export-actions button {
+  width: auto;
+  min-height: 34px;
+  padding: 7px 12px;
+  font-size: .74rem;
+  line-height: 1;
+}
+.reports-export-actions .btn-dark {
+  border-color: #17304d;
+  background: #17304d;
+  color: #fff;
+}
+.reports-accounting-note {
+  margin: 0 18px 10px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  font-size: .72rem;
+}
+.reports-table th { padding: 8px 9px; font-size: .62rem; }
+.reports-table td { padding: 9px; font-size: .76rem; }
+.reports-table td small { font-size: .66rem; }
+.report-status-pill { min-height: 24px; padding: 3px 7px; font-size: .65rem; }
+.reports-table-footer { padding: 9px 18px 11px; }
+
+/* Combined Sales has a predictable eight-column layout. */
+.report-table-sales { table-layout: fixed; min-width: 900px; }
+.report-table-sales th:nth-child(1) { width: 11%; }
+.report-table-sales th:nth-child(2) { width: 13%; }
+.report-table-sales th:nth-child(3) { width: 20%; }
+.report-table-sales th:nth-child(4) { width: 17%; }
+.report-table-sales th:nth-child(5) { width: 9%; }
+.report-table-sales th:nth-child(6),
+.report-table-sales th:nth-child(7),
+.report-table-sales th:nth-child(8) { width: 10%; }
+.report-table-sales .report-cell-text_strong strong,
+.report-table-sales .report-cell-client strong { overflow-wrap: anywhere; }
+
+/* Tablet: Combined Sales stays a compact eight-column table instead of the
+   large mobile cards. Other reports keep their existing responsive behavior. */
+@media (min-width: 641px) and (max-width: 900px) {
+  .reports-summary {
+    grid-template-columns: repeat(4,minmax(0,1fr)) !important;
+    gap: 8px !important;
+  }
+  .report-summary-card {
+    min-height: 78px !important;
+    padding: 11px 12px !important;
+    border-radius: 13px !important;
+  }
+  .report-summary-card span { font-size: .61rem !important; }
+  .report-summary-card strong { margin-top: 5px !important; font-size: 1.08rem !important; }
+  .report-summary-card small { margin-top: 4px !important; font-size: .62rem !important; }
+
+  .reports-table-head {
+    padding: 14px 14px 10px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+  .reports-table-head > div:first-child { min-width: 0; }
+  .reports-table-head h3 { font-size: 1rem; }
+  .reports-table-head p { font-size: .68rem; }
+  .reports-export-actions {
+    display: flex !important;
+    width: auto !important;
+    flex: 0 0 auto;
+    gap: 5px !important;
+  }
+  .reports-export-actions .btn,
+  .reports-export-actions button {
+    width: auto !important;
+    min-height: 32px;
+    padding: 6px 9px;
+    font-size: .68rem;
+  }
+  .reports-accounting-note { margin: 0 14px 9px !important; padding: 7px 9px !important; }
+
+  .report-table-scroll-sales {
+    overflow-x: visible !important;
+    padding: 0 14px !important;
+    border-top: 0 !important;
+  }
+  .reports-mobile-card-table.report-table-sales {
+    display: table !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    font-size: .68rem !important;
+  }
+  .reports-mobile-card-table.report-table-sales thead { display: table-header-group !important; }
+  .reports-mobile-card-table.report-table-sales tbody { display: table-row-group !important; }
+  .reports-mobile-card-table.report-table-sales tbody > tr {
+    display: table-row !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+  .reports-mobile-card-table.report-table-sales td {
+    display: table-cell !important;
+    width: auto !important;
+    min-width: 0 !important;
+    padding: 7px 6px !important;
+    border: 0 !important;
+    border-bottom: 1px solid #edf0f2 !important;
+    text-align: left !important;
+    vertical-align: middle !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+  }
+  .reports-mobile-card-table.report-table-sales td::before { display: none !important; }
+  .reports-mobile-card-table.report-table-sales .report-cell-money,
+  .reports-mobile-card-table.report-table-sales .report-cell-money_emphasis,
+  .reports-mobile-card-table.report-table-sales .report-cell-signed_money,
+  .reports-mobile-card-table.report-table-sales .report-cell-number { text-align: right !important; }
+  .reports-mobile-card-table.report-table-sales th { padding: 7px 6px !important; font-size: .56rem !important; }
+  .reports-mobile-card-table.report-table-sales td strong { font-size: .68rem; }
+  .reports-mobile-card-table.report-table-sales td small { margin-top: 2px; font-size: .58rem; white-space: normal !important; }
+  .reports-mobile-card-table.report-table-sales .report-status-pill { min-height: 20px; padding: 2px 5px; font-size: .56rem; }
+
+  .report-table-sales th:nth-child(1) { width: 11%; }
+  .report-table-sales th:nth-child(2) { width: 13%; }
+  .report-table-sales th:nth-child(3) { width: 20%; }
+  .report-table-sales th:nth-child(4) { width: 17%; }
+  .report-table-sales th:nth-child(5) { width: 9%; }
+  .report-table-sales th:nth-child(6),
+  .report-table-sales th:nth-child(7),
+  .report-table-sales th:nth-child(8) { width: 10%; }
+  .report-panel-sales .reports-table-footer { padding: 8px 14px 10px !important; flex-direction: row !important; }
+}
+
+/* Phones retain cards, but use denser spacing and stronger action buttons. */
+@media (max-width: 640px) {
+  .reports-summary { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  .report-summary-card { min-height: 84px !important; padding: 11px !important; }
+  .report-summary-card strong { font-size: 1.08rem !important; }
+  .reports-export-actions {
+    display: grid !important;
+    grid-template-columns: repeat(3,minmax(0,1fr)) !important;
+    width: 100% !important;
+  }
+  .reports-export-actions .btn,
+  .reports-export-actions button { width: 100% !important; min-height: 36px; padding: 7px 6px; }
+}
+@media (max-width: 390px) {
+  .reports-summary { grid-template-columns: 1fr 1fr !important; }
+  .reports-export-actions { grid-template-columns: 1fr !important; }
+}
+
+@media print {
+  @page { size: landscape; margin: 9mm; }
+  body { overflow: visible !important; }
+  .admin-bottom-nav,
+  .admin-menu-backdrop,
+  .admin-sidebar,
+  .admin-topbar,
+  .report-no-print,
+  .reports-export-actions { display: none !important; }
+  .reports-summary { margin-bottom: 7px !important; }
+  .report-summary-card { padding: 6px 7px !important; }
+  .report-summary-card strong { font-size: 11px !important; }
+  .reports-table-head { padding-bottom: 5px !important; }
+  .reports-accounting-note { margin-bottom: 5px !important; padding: 4px 5px !important; }
+  .reports-table-scroll { overflow: visible !important; padding: 0 !important; }
+  .reports-table,
+  .reports-mobile-card-table {
+    display: table !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: auto !important;
+    border-collapse: collapse !important;
+  }
+  .reports-mobile-card-table thead { display: table-header-group !important; }
+  .reports-mobile-card-table tbody { display: table-row-group !important; }
+  .reports-mobile-card-table tbody > tr { display: table-row !important; break-inside: avoid; }
+  .reports-mobile-card-table td { display: table-cell !important; }
+  .reports-mobile-card-table td::before { display: none !important; }
+  .reports-table th,
+  .reports-table td { padding: 3px 4px !important; font-size: 6.5px !important; }
+  .reports-table th { font-size: 6px !important; }
+  .reports-table td strong,
+  .reports-table td small,
+  .report-status-pill { font-size: 6.5px !important; }
+}
+
+/* Food Stall Rentals - compact summary and filters (v1.2.151) ------------ */
+.admin-page-food-stall-rentals .rental-summary-grid{
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:10px;
+}
+.admin-page-food-stall-rentals .rental-summary-grid .dashboard-snapshot-card{
+  min-height:96px;
+  padding:14px 15px;
+  border-radius:14px;
+}
+.admin-page-food-stall-rentals .rental-summary-grid .dashboard-snapshot-card span{
+  font-size:.64rem;
+  letter-spacing:.045em;
+}
+.admin-page-food-stall-rentals .rental-summary-grid .dashboard-snapshot-card strong{
+  margin:4px 0 1px;
+  font-size:1.2rem;
+}
+.admin-page-food-stall-rentals .rental-summary-grid .dashboard-snapshot-card small{
+  font-size:.67rem;
+}
+.admin-page-food-stall-rentals .rental-records-panel{
+  overflow:visible;
+}
+.admin-page-food-stall-rentals .rental-records-head{
+  padding-bottom:10px;
+}
+.admin-page-food-stall-rentals .rental-records-head h2{
+  margin-bottom:2px;
+}
+.admin-page-food-stall-rentals .rental-records-head p{
+  margin:0;
+  font-size:.76rem;
+}
+.admin-page-food-stall-rentals .rental-list-toolbar{
+  display:grid;
+  grid-template-columns:minmax(280px,1fr) minmax(150px,180px) minmax(165px,220px) auto auto;
+  gap:8px;
+  align-items:center;
+  padding:0 22px 14px;
+}
+.admin-page-food-stall-rentals .rental-toolbar-search,
+.admin-page-food-stall-rentals .rental-toolbar-field{
+  min-width:0;
+}
+.admin-page-food-stall-rentals .rental-list-toolbar .sr-only{
+  position:absolute;
+  width:1px;
+  height:1px;
+  padding:0;
+  margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+  border:0;
+}
+.admin-page-food-stall-rentals .rental-list-toolbar input[type="search"],
+.admin-page-food-stall-rentals .rental-list-toolbar select{
+  width:100%;
+  height:42px;
+  min-height:42px;
+  margin:0;
+}
+.admin-page-food-stall-rentals .rental-toolbar-filters{
+  display:contents;
+}
+.admin-page-food-stall-rentals .rental-toolbar-apply,
+.admin-page-food-stall-rentals .rental-toolbar-reset{
+  min-height:42px;
+  padding:0 16px;
+  white-space:nowrap;
+}
+.admin-page-food-stall-rentals .rental-filter-toggle,
+.admin-page-food-stall-rentals .rental-filter-toggle-button{
+  display:none;
+}
+
+@media(max-width:1180px){
+  .admin-page-food-stall-rentals .rental-summary-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+  .admin-page-food-stall-rentals .rental-list-toolbar{
+    grid-template-columns:minmax(240px,1fr) minmax(140px,170px) minmax(150px,190px) auto auto;
+  }
+}
+
+@media(max-width:820px){
+  .admin-page-food-stall-rentals .rental-summary-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+  .admin-page-food-stall-rentals .rental-summary-grid .dashboard-snapshot-card{
+    min-height:88px;
+    padding:12px 13px;
+  }
+  .admin-page-food-stall-rentals .rental-summary-grid .dashboard-snapshot-card:last-child{
+    grid-column:1/-1;
+  }
+  .admin-page-food-stall-rentals .rental-list-toolbar{
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:8px;
+    padding:0 14px 12px;
+  }
+  .admin-page-food-stall-rentals .rental-toolbar-search{
+    grid-column:1;
+  }
+  .admin-page-food-stall-rentals .rental-filter-toggle-button{
+    display:inline-flex;
+    grid-column:2;
+    align-items:center;
+    justify-content:center;
+    min-height:42px;
+    margin:0;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .admin-page-food-stall-rentals .rental-filter-toggle{
+    position:absolute;
+    width:1px;
+    height:1px;
+    overflow:hidden;
+    clip:rect(0 0 0 0);
+    clip-path:inset(50%);
+    white-space:nowrap;
+  }
+  .admin-page-food-stall-rentals .rental-toolbar-filters{
+    display:none;
+    grid-column:1/-1;
+    grid-template-columns:1fr 1fr auto auto;
+    gap:8px;
+    padding-top:2px;
+  }
+  .admin-page-food-stall-rentals .rental-filter-toggle:checked ~ .rental-toolbar-filters{
+    display:grid;
+  }
+}
+
+@media(max-width:560px){
+  .admin-page-food-stall-rentals .rental-summary-grid .dashboard-snapshot-card strong{
+    font-size:1.05rem;
+  }
+  .admin-page-food-stall-rentals .rental-toolbar-filters{
+    grid-template-columns:1fr 1fr;
+  }
+  .admin-page-food-stall-rentals .rental-toolbar-field{
+    grid-column:1/-1;
+  }
+  .admin-page-food-stall-rentals .rental-toolbar-apply,
+  .admin-page-food-stall-rentals .rental-toolbar-reset{
+    width:100%;
+    justify-content:center;
+  }
+}
+
+/* v1.2.152 - Compact New/Edit Food Stall Rental form */
+.admin-page-food-stall-rental-create .rental-entry-panel {
+  padding-bottom: var(--space-5);
+}
+.admin-page-food-stall-rental-create .rental-entry-head {
+  align-items: flex-start;
+}
+.admin-page-food-stall-rental-create .rental-entry-form {
+  max-width: 1240px;
+  margin: 0 auto;
+}
+.admin-page-food-stall-rental-create .rental-form-section {
+  padding: 18px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.admin-page-food-stall-rental-create .rental-form-section:first-of-type {
+  padding-top: 4px;
+  border-top: 0;
+}
+.admin-page-food-stall-rental-create .rental-form-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: 14px;
+}
+.admin-page-food-stall-rental-create .rental-form-section-head h3 {
+  margin: 0 0 3px;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+.admin-page-food-stall-rental-create .rental-form-section-head p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: .78rem;
+  line-height: 1.45;
+}
+.admin-page-food-stall-rental-create .rental-entry-form .form-grid {
+  gap: 14px;
+}
+.admin-page-food-stall-rental-create .rental-entry-form .form-group {
+  margin-bottom: 0;
+}
+.admin-page-food-stall-rental-create .rental-entry-form input,
+.admin-page-food-stall-rental-create .rental-entry-form select {
+  min-height: 44px;
+}
+.admin-page-food-stall-rental-create .rental-entry-form textarea {
+  min-height: 82px;
+}
+.admin-page-food-stall-rental-create .rental-price-field {
+  grid-column: 1 / -1;
+  max-width: calc(50% - 7px);
+}
+.admin-page-food-stall-rental-create .rental-schedule-toggle {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  width: min(100%, 470px);
+  padding: 4px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
+}
+.admin-page-food-stall-rental-create .rental-schedule-option {
+  position: relative;
+  margin: 0;
+  cursor: pointer;
+}
+.admin-page-food-stall-rental-create .rental-schedule-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.admin-page-food-stall-rental-create .rental-schedule-option span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-md) - 3px);
+  color: var(--text-muted);
+  font-size: .82rem;
+  font-weight: 800;
+  text-align: center;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.admin-page-food-stall-rental-create .rental-schedule-option input:checked + span {
+  border-color: rgba(44, 255, 5, .35);
+  background: var(--surface-raised);
+  color: var(--text-body);
+  box-shadow: var(--shadow-xs);
+}
+.admin-page-food-stall-rental-create .rental-schedule-option input:focus-visible + span {
+  outline: 2px solid var(--brand-green);
+  outline-offset: 2px;
+}
+.admin-page-food-stall-rental-create .rental-date-grid {
+  max-width: 760px;
+}
+.admin-page-food-stall-rental-create .rental-flexible-dates {
+  max-width: 760px;
+}
+.admin-page-food-stall-rental-create .rental-flexible-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+.admin-page-food-stall-rental-create .rental-flexible-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.admin-page-food-stall-rental-create .rental-flexible-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+.admin-page-food-stall-rental-create .rental-flexible-empty {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: .78rem;
+  text-align: center;
+}
+.admin-page-food-stall-rental-create .rental-payment-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
+  cursor: pointer;
+}
+.admin-page-food-stall-rental-create .rental-payment-toggle input {
+  flex: 0 0 auto;
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  margin-top: 2px;
+}
+.admin-page-food-stall-rental-create .rental-payment-toggle span {
+  display: grid;
+  gap: 2px;
+}
+.admin-page-food-stall-rental-create .rental-payment-toggle strong {
+  font-size: .82rem;
+}
+.admin-page-food-stall-rental-create .rental-payment-toggle small {
+  color: var(--text-muted);
+  font-size: .72rem;
+  line-height: 1.4;
+}
+.admin-page-food-stall-rental-create .rental-payment-fields {
+  max-width: 980px;
+  margin-top: 14px;
+}
+.admin-page-food-stall-rental-create .rental-notes-section {
+  padding-bottom: 12px;
+}
+.admin-page-food-stall-rental-create .rental-notes-section .form-group {
+  max-width: 760px;
+}
+.admin-page-food-stall-rental-create .rental-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+.admin-page-food-stall-rental-create .rental-payment-fields[hidden],
+.admin-page-food-stall-rental-create .rental-flexible-dates[hidden],
+.admin-page-food-stall-rental-create [data-stall-continuous][hidden] {
+  display: none !important;
+}
+
+@media (max-width: 720px) {
+  .admin-page-food-stall-rental-create .rental-entry-head {
+    gap: 12px;
+  }
+  .admin-page-food-stall-rental-create .rental-entry-head-actions {
+    width: 100%;
+  }
+  .admin-page-food-stall-rental-create .rental-entry-head-actions .btn {
+    flex: 1 1 130px;
+  }
+  .admin-page-food-stall-rental-create .rental-form-section {
+    padding: 16px 0;
+  }
+  .admin-page-food-stall-rental-create .rental-form-section-head {
+    margin-bottom: 12px;
+  }
+  .admin-page-food-stall-rental-create .rental-price-field {
+    max-width: none;
+  }
+  .admin-page-food-stall-rental-create .rental-schedule-toggle {
+    width: 100%;
+  }
+  .admin-page-food-stall-rental-create .rental-schedule-option span {
+    min-height: 44px;
+    padding-inline: 8px;
+  }
+  .admin-page-food-stall-rental-create .rental-flexible-add,
+  .admin-page-food-stall-rental-create .rental-flexible-row {
+    grid-template-columns: 1fr;
+  }
+  .admin-page-food-stall-rental-create .rental-flexible-add .btn,
+  .admin-page-food-stall-rental-create .rental-flexible-row .btn {
+    width: 100%;
+  }
+  .admin-page-food-stall-rental-create .rental-payment-toggle {
+    width: 100%;
+  }
+  .admin-page-food-stall-rental-create .rental-form-footer {
+    flex-direction: column-reverse;
+  }
+  .admin-page-food-stall-rental-create .rental-form-footer .btn {
+    width: 100%;
+  }
+}
+
+/* TLH v1.2.154 - Food Stall Rental extension form */
+.admin-page-food-stall-rental-extend .rental-extension-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+.admin-page-food-stall-rental-extend .rental-form-section {
+  padding: 20px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.admin-page-food-stall-rental-extend .rental-form-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+.admin-page-food-stall-rental-extend .rental-form-section-head h3 { margin: 2px 0 4px; }
+.admin-page-food-stall-rental-extend .rental-form-section-head p { margin: 0; color: var(--text-muted); font-size: .8rem; }
+.admin-page-food-stall-rental-extend .rental-date-grid,
+.admin-page-food-stall-rental-extend .rental-flexible-dates { max-width: 760px; }
+.admin-page-food-stall-rental-extend .rental-price-field { max-width: 420px; }
+.admin-page-food-stall-rental-extend .rental-flexible-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+.admin-page-food-stall-rental-extend .rental-flexible-list { display: grid; gap: 8px; margin-top: 12px; }
+.admin-page-food-stall-rental-extend .rental-flexible-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+.admin-page-food-stall-rental-extend .rental-flexible-empty {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: .78rem;
+  text-align: center;
+}
+.admin-page-food-stall-rental-extend .rental-flexible-empty[hidden] { display: none !important; }
+.admin-page-food-stall-rental-extend .rental-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+@media (max-width: 900px) {
+  .admin-page-food-stall-rental-extend .rental-extension-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .admin-page-food-stall-rental-extend .rental-extension-summary { grid-template-columns: 1fr; }
+  .admin-page-food-stall-rental-extend .rental-flexible-add,
+  .admin-page-food-stall-rental-extend .rental-flexible-row { grid-template-columns: 1fr; }
+  .admin-page-food-stall-rental-extend .rental-flexible-add .btn,
+  .admin-page-food-stall-rental-extend .rental-flexible-row .btn { width: 100%; }
+  .admin-page-food-stall-rental-extend .rental-form-footer { flex-direction: column-reverse; }
+  .admin-page-food-stall-rental-extend .rental-form-footer .btn { width: 100%; }
+}
+
+/* TLH v1.2.157 - Food Stall Rental detail redesign */
+.admin-page-food-stall-rental-view .rental-record-header {
+  margin-bottom: 18px;
+}
+.admin-page-food-stall-rental-view .rental-record-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 22px;
+}
+.admin-page-food-stall-rental-view .rental-record-identity {
+  min-width: 0;
+}
+.admin-page-food-stall-rental-view .rental-record-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 3px;
+}
+.admin-page-food-stall-rental-view .rental-record-title-row h2 {
+  margin: 0;
+  font-size: clamp(1.45rem, 2.2vw, 2rem);
+  line-height: 1.08;
+}
+.admin-page-food-stall-rental-view .rental-record-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: .78rem;
+}
+.admin-page-food-stall-rental-view .rental-record-meta strong {
+  color: var(--navy);
+}
+.admin-page-food-stall-rental-view .rental-record-actions {
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+.admin-page-food-stall-rental-view .rental-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, .75fr);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.admin-page-food-stall-rental-view .rental-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.admin-page-food-stall-rental-view .rental-section-head h2 {
+  margin: 2px 0 0;
+  font-size: 1.08rem;
+}
+.admin-page-food-stall-rental-view .rental-info-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 24px;
+  row-gap: 0;
+}
+.admin-page-food-stall-rental-view .rental-info-list > div {
+  display: grid;
+  grid-template-columns: minmax(118px, .8fr) minmax(0, 1.2fr);
+  gap: 12px;
+  align-items: start;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.admin-page-food-stall-rental-view .rental-info-list > div:nth-last-child(-n+2) {
+  border-bottom-color: transparent;
+}
+.admin-page-food-stall-rental-view .rental-info-list span,
+.admin-page-food-stall-rental-view .rental-financial-list span,
+.admin-page-food-stall-rental-view .rental-final-billing-card span,
+.admin-page-food-stall-rental-view .rental-extension-facts span,
+.admin-page-food-stall-rental-view .rental-note-card > span {
+  color: var(--text-muted);
+  font-size: .7rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: .045em;
+}
+.admin-page-food-stall-rental-view .rental-info-list strong {
+  min-width: 0;
+  color: var(--navy);
+  font-size: .82rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.admin-page-food-stall-rental-view .rental-financial-card {
+  background: linear-gradient(180deg, #fff, #fbfcfe);
+}
+.admin-page-food-stall-rental-view .rental-financial-head {
+  align-items: center;
+}
+.admin-page-food-stall-rental-view .rental-financial-head h2 {
+  font-size: 1.65rem;
+  letter-spacing: -.03em;
+}
+.admin-page-food-stall-rental-view .rental-financial-list {
+  display: grid;
+}
+.admin-page-food-stall-rental-view .rental-financial-list > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.admin-page-food-stall-rental-view .rental-financial-list strong {
+  color: var(--navy);
+  font-size: .86rem;
+  text-align: right;
+  white-space: nowrap;
+}
+.admin-page-food-stall-rental-view .rental-financial-list .rental-financial-total {
+  margin-top: 4px;
+  padding-top: 13px;
+  border-top: 1px solid var(--navy);
+}
+.admin-page-food-stall-rental-view .rental-financial-list .rental-financial-total strong,
+.admin-page-food-stall-rental-view .rental-financial-list .rental-financial-balance strong {
+  font-size: 1rem;
+}
+.admin-page-food-stall-rental-view .rental-financial-balance.has-balance strong {
+  color: #a82337;
+}
+.admin-page-food-stall-rental-view .rental-financial-balance.is-paid strong {
+  color: #0d7652;
+}
+.admin-page-food-stall-rental-view .rental-financial-note {
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  font-size: .72rem;
+  line-height: 1.45;
+}
+.admin-page-food-stall-rental-view .rental-dates-panel,
+.admin-page-food-stall-rental-view .rental-extension-panel {
+  margin-bottom: 18px;
+}
+.admin-page-food-stall-rental-view .rental-dates-head {
+  align-items: center;
+}
+.admin-page-food-stall-rental-view .rental-count-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  color: var(--text-muted);
+  background: #f8fafc;
+  font-size: .69rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.admin-page-food-stall-rental-view .rental-date-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.admin-page-food-stall-rental-view .rental-date-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid #bce8d4;
+  border-radius: 999px;
+  background: #edf9f4;
+  color: #0d7652;
+}
+.admin-page-food-stall-rental-view .rental-date-chip strong {
+  font-size: .73rem;
+  line-height: 1;
+}
+.admin-page-food-stall-rental-view .rental-date-chip small {
+  padding-left: 7px;
+  border-left: 1px solid currentColor;
+  font-size: .61rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  opacity: .78;
+}
+.admin-page-food-stall-rental-view .rental-date-chip.is-extension {
+  border-color: #c3ddf8;
+  background: #eef6ff;
+  color: #1b5b92;
+}
+.admin-page-food-stall-rental-view .rental-date-chip.is-released {
+  border-color: #f0d88d;
+  background: #fff8e8;
+  color: #8a5b00;
+  opacity: .72;
+  text-decoration: line-through;
+}
+.admin-page-food-stall-rental-view .rental-history-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+.admin-page-food-stall-rental-view .rental-history-details > summary::-webkit-details-marker {
+  display: none;
+}
+.admin-page-food-stall-rental-view .rental-history-details > summary strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--navy);
+  font-size: 1.08rem;
+}
+.admin-page-food-stall-rental-view .rental-extension-timeline {
+  display: grid;
+  gap: 0;
+  margin-top: 18px;
+}
+.admin-page-food-stall-rental-view .rental-extension-entry {
+  position: relative;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 12px;
+  padding-bottom: 18px;
+}
+.admin-page-food-stall-rental-view .rental-extension-entry:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 15px;
+  bottom: -3px;
+  width: 1px;
+  background: var(--border-subtle);
+}
+.admin-page-food-stall-rental-view .rental-extension-marker {
+  width: 13px;
+  height: 13px;
+  margin-top: 5px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--navy);
+  box-shadow: 0 0 0 1px var(--border-subtle);
+  z-index: 1;
+}
+.admin-page-food-stall-rental-view .rental-extension-content {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: #fbfcfe;
+}
+.admin-page-food-stall-rental-view .rental-extension-entry-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+.admin-page-food-stall-rental-view .rental-extension-entry-head > div > strong,
+.admin-page-food-stall-rental-view .rental-extension-entry-head > div > span {
+  display: block;
+}
+.admin-page-food-stall-rental-view .rental-extension-entry-head > div > strong {
+  color: var(--navy);
+  font-size: .84rem;
+}
+.admin-page-food-stall-rental-view .rental-extension-entry-head > div > span {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: .7rem;
+}
+.admin-page-food-stall-rental-view .rental-extension-charge {
+  color: #0d7652;
+  font-size: .82rem;
+  white-space: nowrap;
+}
+.admin-page-food-stall-rental-view .rental-extension-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 18px;
+}
+.admin-page-food-stall-rental-view .rental-extension-facts > div {
+  min-width: 0;
+}
+.admin-page-food-stall-rental-view .rental-extension-facts .full {
+  grid-column: 1 / -1;
+}
+.admin-page-food-stall-rental-view .rental-extension-facts strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--navy);
+  font-size: .76rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.admin-page-food-stall-rental-view .rental-management-grid {
+  margin-bottom: 18px;
+}
+.admin-page-food-stall-rental-view .rental-status-panel,
+.admin-page-food-stall-rental-view .rental-actions-panel {
+  min-width: 0;
+}
+.admin-page-food-stall-rental-view .rental-note-card {
+  padding: 14px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: #fbfcfe;
+}
+.admin-page-food-stall-rental-view .rental-note-card p {
+  margin: 6px 0 0;
+  color: var(--navy);
+  line-height: 1.55;
+}
+.admin-page-food-stall-rental-view .rental-empty-note {
+  padding: 16px;
+  border: 1px dashed var(--border-subtle);
+  border-radius: 12px;
+  color: var(--text-muted);
+  font-size: .78rem;
+}
+.admin-page-food-stall-rental-view .rental-final-billing-card {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 18px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+.admin-page-food-stall-rental-view .rental-final-billing-card strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--navy);
+  font-size: .78rem;
+}
+.admin-page-food-stall-rental-view .rental-inline-alert {
+  width: 100%;
+  margin: 0 0 14px;
+}
+.admin-page-food-stall-rental-view .rental-action-divider {
+  margin: 20px 0;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.admin-page-food-stall-rental-view .rental-payment-anchor {
+  scroll-margin-top: 110px;
+}
+
+@media (max-width: 1180px) {
+  .admin-page-food-stall-rental-view .rental-overview-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 820px) {
+  .admin-page-food-stall-rental-view .rental-record-head {
+    flex-direction: column;
+  }
+  .admin-page-food-stall-rental-view .rental-record-actions {
+    justify-content: flex-start;
+    width: 100%;
+  }
+  .admin-page-food-stall-rental-view .rental-info-list {
+    grid-template-columns: 1fr;
+  }
+  .admin-page-food-stall-rental-view .rental-info-list > div:nth-last-child(-n+2) {
+    border-bottom-color: var(--border-subtle);
+  }
+  .admin-page-food-stall-rental-view .rental-info-list > div:last-child {
+    border-bottom-color: transparent;
+  }
+}
+@media (max-width: 560px) {
+  .admin-page-food-stall-rental-view .rental-record-actions .btn {
+    flex: 1 1 calc(50% - 8px);
+    text-align: center;
+  }
+  .admin-page-food-stall-rental-view .rental-info-list > div {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+  .admin-page-food-stall-rental-view .rental-section-head,
+  .admin-page-food-stall-rental-view .rental-dates-head,
+  .admin-page-food-stall-rental-view .rental-history-details > summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .admin-page-food-stall-rental-view .rental-extension-entry-head {
+    flex-direction: column;
+  }
+  .admin-page-food-stall-rental-view .rental-extension-facts,
+  .admin-page-food-stall-rental-view .rental-final-billing-card {
+    grid-template-columns: 1fr;
+  }
+  .admin-page-food-stall-rental-view .rental-extension-facts .full {
+    grid-column: auto;
+  }
+  .admin-page-food-stall-rental-view .rental-date-chip {
+    width: 100%;
+    justify-content: space-between;
+    border-radius: 10px;
+  }
+}
+
+/* TLH v1.3.0 - Generic Rentals engine */
+.admin-page-rentals .rental-metric-grid{grid-template-columns:repeat(5,minmax(0,1fr));margin:18px 0 4px}.admin-page-rentals .rental-filter-bar,.admin-page-rental-calendar .rental-filter-bar{display:grid;grid-template-columns:minmax(220px,2fr) repeat(3,minmax(130px,1fr)) auto auto;gap:8px;align-items:center;margin-bottom:14px}.admin-page-rentals .rental-filter-bar input,.admin-page-rentals .rental-filter-bar select,.admin-page-rental-calendar .rental-filter-bar input,.admin-page-rental-calendar .rental-filter-bar select{min-height:40px}.admin-page-rental-create .rental-form-section{padding:18px 0;border-top:1px solid var(--border-subtle)}.admin-page-rental-create .rental-form-section:first-of-type{padding-top:4px;border-top:0}.admin-page-rental-create .rental-form-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}.admin-page-rental-create .rental-form-section-head h3{margin:0 0 3px;font-size:1rem}.admin-page-rental-create .rental-form-section-head p{margin:0;color:var(--text-muted);font-size:.78rem}.admin-page-rental-create .generic-rental-items{display:grid;gap:10px}.admin-page-rental-create .generic-rental-item{display:grid;grid-template-columns:minmax(250px,2fr) minmax(100px,.55fr) minmax(150px,.8fr) auto;gap:10px;align-items:end;padding:12px;border:1px solid var(--border-subtle);border-radius:var(--radius-md);background:var(--surface-subtle)}.admin-page-rental-create .generic-rental-item .form-group{margin:0}.admin-page-rental-create .generic-rental-item-meta{grid-column:1/-1;color:var(--text-muted);font-size:.72rem}.admin-page-rental-create .generic-rental-remove{margin-bottom:1px}.admin-page-rental-create .rental-inline-summary{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:14px;padding:10px 12px;border:1px solid var(--border-subtle);border-radius:var(--radius-md);background:var(--surface-subtle);font-size:.8rem}.admin-page-rental-create .rental-inline-summary span{color:var(--text-muted)}.admin-page-rental-create .rental-schedule-switch{display:inline-grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;width:min(100%,470px);padding:4px;margin-bottom:14px;border:1px solid var(--border-subtle);border-radius:var(--radius-md);background:var(--surface-subtle)}.admin-page-rental-create .rental-schedule-switch label{position:relative;margin:0}.admin-page-rental-create .rental-schedule-switch input{position:absolute;opacity:0;pointer-events:none}.admin-page-rental-create .rental-schedule-switch span{display:flex;align-items:center;justify-content:center;min-height:38px;padding:8px 14px;border:1px solid transparent;border-radius:calc(var(--radius-md) - 3px);color:var(--text-muted);font-size:.82rem;font-weight:800}.admin-page-rental-create .rental-schedule-switch input:checked+span{border-color:rgba(44,255,5,.35);background:var(--surface-raised);color:var(--text-body);box-shadow:var(--shadow-xs)}.admin-page-rental-create .rental-flexible-toolbar{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:10px}.admin-page-rental-create [data-flex-date-list],.admin-page-rental-extend [data-extension-dates]{display:grid;gap:8px}.admin-page-rental-create .rental-flexible-row,.admin-page-rental-extend .rental-flexible-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}.admin-page-rental-create .rental-payment-toggle,.admin-page-rental-extend .rental-payment-toggle{display:flex;align-items:flex-start;gap:11px;width:fit-content;max-width:100%;padding:11px 13px;border:1px solid var(--border-subtle);border-radius:var(--radius-md);background:var(--surface-subtle);cursor:pointer}.admin-page-rental-create .rental-payment-toggle span,.admin-page-rental-extend .rental-payment-toggle span{display:grid;gap:2px}.admin-page-rental-create .rental-payment-toggle small,.admin-page-rental-extend .rental-payment-toggle small{color:var(--text-muted);font-size:.72rem}.admin-page-rental-create .rental-form-footer,.admin-page-rental-extend .rental-form-footer{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;padding-top:16px;border-top:1px solid var(--border-subtle);margin-top:16px}.admin-page-rental-view .rental-detail-hero{display:grid;gap:14px}.admin-page-rental-view .rental-detail-title{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.admin-page-rental-view .rental-detail-title h2{margin:2px 0 4px}.admin-page-rental-view .rental-detail-actions{flex-wrap:wrap}.admin-page-rental-view .rental-detail-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:18px}.admin-page-rental-view .rental-info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px}.admin-page-rental-view .rental-info-grid>div,.admin-page-rental-extend .rental-info-grid>div{display:grid;gap:3px}.admin-page-rental-view .rental-info-grid span,.admin-page-rental-extend .rental-info-grid span{color:var(--text-muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}.admin-page-rental-view .rental-financial-summary{display:grid;gap:10px}.admin-page-rental-view .rental-financial-summary>div{display:flex;justify-content:space-between;gap:16px}.admin-page-rental-view .rental-financial-total{padding-top:10px;border-top:1px solid var(--border-subtle);font-size:1.04rem}.admin-page-rental-view .rental-date-chips{display:flex;flex-wrap:wrap;gap:8px}.admin-page-rental-view .rental-date-chip{display:inline-flex;align-items:center;padding:7px 10px;border:1px solid var(--border-subtle);border-radius:999px;background:var(--surface-subtle);font-size:.76rem;font-weight:700}.admin-page-rental-view .rental-date-chip.is-released{opacity:.55;text-decoration:line-through}.admin-page-rental-view .rental-extension-timeline{display:grid;gap:12px;margin-top:14px}.admin-page-rental-view .rental-extension-entry{display:grid;grid-template-columns:12px 1fr;gap:10px}.admin-page-rental-view .rental-extension-dot{width:9px;height:9px;margin-top:5px;border-radius:50%;background:var(--brand-green)}.admin-page-rental-view .rental-extension-entry span{display:block;color:var(--text-muted);font-size:.72rem}.admin-page-rental-view .rental-extension-entry p{margin:4px 0}.admin-page-rental-calendar .rental-calendar-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 0}.admin-page-rental-calendar .rental-calendar-nav h3{margin:0}.admin-page-rental-calendar .rental-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-left:1px solid var(--border-subtle);border-top:1px solid var(--border-subtle)}.admin-page-rental-calendar .rental-calendar-weekdays>div{padding:9px 7px;background:var(--surface-subtle);font-size:.72rem;font-weight:800;text-align:center;border-right:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle)}.admin-page-rental-calendar .rental-calendar-day{min-height:125px;padding:7px;border-right:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle);background:var(--surface-raised)}.admin-page-rental-calendar .rental-calendar-day.is-outside{opacity:.45;background:var(--surface-subtle)}.admin-page-rental-calendar .rental-calendar-day.is-today{box-shadow:inset 0 0 0 2px var(--brand-green)}.admin-page-rental-calendar .rental-calendar-date{font-weight:800;font-size:.8rem;margin-bottom:6px}.admin-page-rental-calendar .rental-calendar-events{display:grid;gap:5px}.admin-page-rental-calendar .rental-calendar-event{display:grid;gap:1px;padding:6px 7px;border:1px solid var(--border-subtle);border-radius:7px;background:var(--surface-subtle);color:inherit;text-decoration:none;min-width:0}.admin-page-rental-calendar .rental-calendar-event strong,.admin-page-rental-calendar .rental-calendar-event span,.admin-page-rental-calendar .rental-calendar-event small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.admin-page-rental-calendar .rental-calendar-event strong{font-size:.68rem}.admin-page-rental-calendar .rental-calendar-event span{font-size:.65rem}.admin-page-rental-calendar .rental-calendar-event small{font-size:.58rem;color:var(--text-muted)}
+@media(max-width:1100px){.admin-page-rentals .rental-metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.admin-page-rentals .rental-filter-bar,.admin-page-rental-calendar .rental-filter-bar{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-page-rental-view .rental-detail-grid{grid-template-columns:1fr}.admin-page-rental-create .generic-rental-item{grid-template-columns:minmax(220px,2fr) 100px 150px auto}}
+@media(max-width:760px){.admin-page-rentals .rental-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-page-rentals .rental-filter-bar,.admin-page-rental-calendar .rental-filter-bar{grid-template-columns:1fr}.admin-page-rental-create .generic-rental-item{grid-template-columns:1fr}.admin-page-rental-create .generic-rental-remove{width:100%}.admin-page-rental-create .rental-schedule-switch{width:100%}.admin-page-rental-create .rental-form-footer,.admin-page-rental-extend .rental-form-footer{flex-direction:column-reverse}.admin-page-rental-create .rental-form-footer .btn,.admin-page-rental-extend .rental-form-footer .btn{width:100%}.admin-page-rental-view .rental-info-grid{grid-template-columns:1fr}.admin-page-rental-calendar .rental-calendar-grid{min-width:760px}.admin-page-rental-calendar .panel{overflow-x:auto}}
+
+/* TLH v1.3.1 - Simplified generic Rental form */
+.admin-page-rental-create .rental-create-panel{padding-bottom:18px}
+.admin-page-rental-create .rental-create-head{margin-bottom:2px}
+.admin-page-rental-create .rental-form-section-compact{padding:14px 0}
+.admin-page-rental-create .rental-form-section-head.compact{margin-bottom:10px;align-items:center}
+.admin-page-rental-create .rental-form-section-head.compact h3{font-size:.95rem}
+.admin-page-rental-create .rental-client-grid{display:grid;grid-template-columns:1.35fr .85fr 1.1fr;gap:12px}
+.admin-page-rental-create .rental-client-grid .form-group{margin:0}
+.admin-page-rental-create .rental-base-total{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--border-subtle);border-radius:999px;background:var(--surface-subtle);white-space:nowrap;font-size:.76rem}
+.admin-page-rental-create .rental-base-total span{color:var(--text-muted)}
+.admin-page-rental-create .rental-base-total strong{font-size:.84rem}
+.admin-page-rental-create .generic-rental-items{gap:8px}
+.admin-page-rental-create .generic-rental-item{grid-template-columns:minmax(260px,2.1fr) minmax(84px,.45fr) minmax(150px,.75fr) auto;gap:8px;padding:10px}
+.admin-page-rental-create .generic-rental-item-meta{margin-top:-1px;font-size:.68rem;line-height:1.35}
+.admin-page-rental-create .generic-rental-item.is-exclusive{grid-template-columns:minmax(280px,2.2fr) minmax(170px,.8fr) auto}
+.admin-page-rental-create .generic-rental-item.is-exclusive .generic-rental-select{grid-column:1}
+.admin-page-rental-create .generic-rental-item.is-exclusive .generic-rental-amount{grid-column:2}
+.admin-page-rental-create .generic-rental-item.is-exclusive .generic-rental-remove{grid-column:3}
+.admin-page-rental-create .generic-rental-item.is-exclusive .generic-rental-item-meta{grid-column:1/-1}
+.admin-page-rental-create .rental-item-actions{display:flex;justify-content:flex-start;margin-top:8px}
+.admin-page-rental-create .rental-complimentary-row{display:grid;grid-template-columns:auto minmax(240px,1fr);gap:12px;align-items:end;margin-top:12px}
+.admin-page-rental-create .rental-compact-check{display:inline-flex;align-items:center;gap:9px;min-height:40px;padding:8px 10px;border:1px solid var(--border-subtle);border-radius:var(--radius-md);background:var(--surface-subtle);cursor:pointer}
+.admin-page-rental-create .rental-compact-check>span{display:grid;gap:1px}
+.admin-page-rental-create .rental-compact-check strong{font-size:.78rem}
+.admin-page-rental-create .rental-compact-check small{color:var(--text-muted);font-size:.66rem}
+.admin-page-rental-create .rental-compact-check input{margin:0}
+.admin-page-rental-create .rental-complimentary-reason{margin:0}
+.admin-page-rental-create .rental-compatibility-warning{margin-top:10px;padding:9px 11px;border:1px solid rgba(230,145,0,.35);border-radius:var(--radius-md);background:rgba(230,145,0,.08);font-size:.74rem}
+.admin-page-rental-create .rental-schedule-switch{margin-bottom:10px;width:min(100%,360px)}
+.admin-page-rental-create .rental-schedule-switch span{min-height:34px;padding:6px 12px;font-size:.78rem}
+.admin-page-rental-create .rental-date-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.admin-page-rental-create .rental-payment-inline{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.admin-page-rental-create .rental-payment-inline h3{margin:0 0 2px;font-size:.95rem}
+.admin-page-rental-create .rental-payment-inline p{margin:0;color:var(--text-muted);font-size:.74rem}
+.admin-page-rental-create .rental-payment-fields{margin-top:12px;padding-top:12px;border-top:1px solid var(--border-subtle)}
+.admin-page-rental-create .rental-more-options{margin-top:2px;border-top:1px solid var(--border-subtle)}
+.admin-page-rental-create .rental-more-options summary{display:flex;align-items:center;gap:8px;padding:13px 0;cursor:pointer;list-style:none;font-weight:800;font-size:.84rem}
+.admin-page-rental-create .rental-more-options summary::-webkit-details-marker{display:none}
+.admin-page-rental-create .rental-more-options summary:before{content:'›';display:inline-block;font-size:1.05rem;transition:transform .15s ease}
+.admin-page-rental-create .rental-more-options[open] summary:before{transform:rotate(90deg)}
+.admin-page-rental-create .rental-more-options summary small{color:var(--text-muted);font-weight:500;font-size:.7rem}
+.admin-page-rental-create .rental-more-options-body{display:grid;gap:12px;padding:0 0 14px}
+.admin-page-rental-create .rental-deposit-control{display:grid;grid-template-columns:auto minmax(220px,1fr);gap:12px;align-items:end}
+.admin-page-rental-create .rental-deposit-control .form-group{margin:0}
+.admin-page-rental-create .rental-more-options textarea{min-height:86px}
+.admin-page-rental-create .rental-form-footer{margin-top:4px;padding-top:14px}
+@media(max-width:1100px){
+  .admin-page-rental-create .rental-client-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .admin-page-rental-create .rental-client-grid .form-group:first-child{grid-column:1/-1}
+  .admin-page-rental-create .generic-rental-item{grid-template-columns:minmax(220px,1.7fr) 90px minmax(145px,.7fr) auto}
+  .admin-page-rental-create .generic-rental-item.is-exclusive{grid-template-columns:minmax(240px,1.7fr) minmax(150px,.8fr) auto}
+}
+@media(max-width:760px){
+  .admin-page-rental-create .rental-create-head,.admin-page-rental-create .rental-form-section-head.compact,.admin-page-rental-create .rental-payment-inline{align-items:stretch;flex-direction:column}
+  .admin-page-rental-create .rental-client-grid,.admin-page-rental-create .rental-date-grid,.admin-page-rental-create .rental-complimentary-row,.admin-page-rental-create .rental-deposit-control{grid-template-columns:1fr}
+  .admin-page-rental-create .rental-client-grid .form-group:first-child{grid-column:auto}
+  .admin-page-rental-create .generic-rental-item,.admin-page-rental-create .generic-rental-item.is-exclusive{grid-template-columns:1fr}
+  .admin-page-rental-create .generic-rental-item.is-exclusive .generic-rental-select,.admin-page-rental-create .generic-rental-item.is-exclusive .generic-rental-amount,.admin-page-rental-create .generic-rental-item.is-exclusive .generic-rental-remove,.admin-page-rental-create .generic-rental-item.is-exclusive .generic-rental-item-meta{grid-column:auto}
+  .admin-page-rental-create .generic-rental-remove{width:100%}
+  .admin-page-rental-create .rental-base-total{align-self:flex-start}
+  .admin-page-rental-create .rental-payment-inline .rental-compact-check{width:100%}
+  .admin-page-rental-create .rental-more-options summary{flex-wrap:wrap}
+}
+
+/* v1.3.6 — flexible Rental Cancellation settlement */
+.admin-page-rental-cancel .rental-detail-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:18px;align-items:start}
+.admin-page-rental-cancel .rental-info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px}
+.admin-page-rental-cancel .rental-info-grid>div{display:grid;gap:3px}
+.admin-page-rental-cancel .rental-info-grid span{color:var(--text-muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
+.admin-page-rental-cancel .form-grid.two-col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.admin-page-rental-cancel .rental-financial-summary{display:grid;gap:10px}
+.admin-page-rental-cancel .rental-financial-summary>div{display:flex;justify-content:space-between;gap:16px}
+.admin-page-rental-cancel .rental-financial-total{padding-top:10px;border-top:1px solid var(--border-subtle);font-size:1.04rem}
+.admin-page-rental-cancel .rental-form-footer{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;padding-top:16px;border-top:1px solid var(--border-subtle);margin-top:16px}
+.admin-page-rental-cancel .rental-settlement-preview{margin-top:14px;background:var(--surface-subtle)}
+@media(max-width:760px){
+  .admin-page-rental-cancel .rental-detail-grid,.admin-page-rental-cancel .rental-info-grid,.admin-page-rental-cancel .form-grid.two-col{grid-template-columns:1fr}
+  .admin-page-rental-cancel .rental-form-footer{flex-direction:column-reverse}
+  .admin-page-rental-cancel .rental-form-footer .btn{width:100%}
+}
+
+/* v1.3.10 - Calendar Viewer rental calendar */
+.admin-page-rental-calendar .rental-calendar-event.is-readonly{cursor:default;user-select:text}
+.admin-page-rental-calendar.admin-calendar-viewer .panel-head{align-items:flex-start}
+.admin-page-rental-calendar.admin-calendar-viewer .calendar-viewer-readonly-badge{display:inline-flex;margin-top:8px}
+.admin-page-rental-calendar.admin-calendar-viewer .calendar-viewer-readonly-note{margin-top:14px}
+
+/* v1.3.11 - Calendar Viewer read-only rental details */
+.admin-page-rental-view-readonly .rental-viewer-detail-hero{display:grid;gap:14px}
+.admin-page-rental-view-readonly .rental-viewer-detail-title{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.admin-page-rental-view-readonly .rental-viewer-detail-title h2{margin:2px 0 4px}
+.admin-page-rental-view-readonly .rental-viewer-detail-badges{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.admin-page-rental-view-readonly .rental-viewer-detail-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:18px}
+.admin-page-rental-view-readonly .rental-viewer-info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px}
+.admin-page-rental-view-readonly .rental-viewer-info-grid>div{display:grid;gap:3px}
+.admin-page-rental-view-readonly .rental-viewer-info-grid span,.admin-page-rental-view-readonly .rental-viewer-item-list article>div>span{color:var(--text-muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
+.admin-page-rental-view-readonly .rental-viewer-item-list{display:grid;gap:10px}
+.admin-page-rental-view-readonly .rental-viewer-item-list article{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(120px,.8fr) auto;gap:12px;align-items:center;padding:11px 12px;border:1px solid var(--border-subtle);border-radius:var(--radius-md);background:var(--surface-subtle)}
+.admin-page-rental-view-readonly .rental-viewer-item-list article>div{display:grid;gap:2px;min-width:0}
+.admin-page-rental-view-readonly .rental-viewer-date-chips{display:flex;flex-wrap:wrap;gap:8px}
+.admin-page-rental-view-readonly .rental-viewer-date-chip{display:inline-flex;align-items:center;padding:7px 10px;border:1px solid var(--border-subtle);border-radius:999px;background:var(--surface-subtle);font-size:.76rem;font-weight:700}
+.admin-page-rental-view-readonly .rental-viewer-date-chip.is-released{opacity:.55;text-decoration:line-through}
+.admin-page-rental-view-readonly .rental-viewer-notes{line-height:1.65;white-space:normal}
+.admin-page-rental-calendar .rental-calendar-event.is-readonly{cursor:pointer}
+.admin-page-rental-calendar .rental-calendar-event.is-readonly:hover{border-color:rgba(44,255,5,.38);background:var(--surface-raised)}
+@media(max-width:900px){.admin-page-rental-view-readonly .rental-viewer-detail-grid{grid-template-columns:1fr}}
+@media(max-width:760px){.admin-page-rental-view-readonly .rental-viewer-detail-title{flex-direction:column}.admin-page-rental-view-readonly .rental-viewer-detail-badges{justify-content:flex-start}.admin-page-rental-view-readonly .rental-viewer-info-grid{grid-template-columns:1fr}.admin-page-rental-view-readonly .rental-viewer-item-list article{grid-template-columns:1fr}}

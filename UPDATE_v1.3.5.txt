@@ -1,0 +1,12 @@
+TLH v1.3.5 - Deployment Readiness Hardening
+
+- Fixed service-worker cache cleanup so older TLH CSS/JS caches are removed during upgrades.
+- Current service worker now reads only from the current static/page caches, preventing stale assets from older versions from winning cache lookup.
+- Added authoritative rental availability rechecks under a MySQL named lock for rental create/edit and extension workflows.
+- Added per-rental mutation locks across payment, deposit, charge, status, edit, extension, and permanent-delete workflows to reduce concurrent-admin race conditions.
+- Standard Rental Edit is now locked after rental charge history exists, preventing monthly billing-period regeneration from deleting attached charges.
+- Prevented critical rentable behavior changes after rental history exists (availability mode, billing mode, utility behavior, and quantity reductions).
+- Added server-side whitelisting for public event setup/cleanup allowances.
+- Generic Rental migration now uses a verified completion marker so heavy seed/data-copy work runs once, retries when required tables are missing, skips legacy Food Stall data-copy work when legacy tables are not present, and logs migration failures to the PHP error log.
+- Production Apache rules now deny public access to update/readme text artifacts and the mobile mockup file.
+- No business pricing, Sales recognition basis, or payment policy was changed.

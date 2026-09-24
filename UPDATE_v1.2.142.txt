@@ -1,0 +1,18 @@
+TLH v1.2.142 - Batch Reservation Permanent Delete Fix
+
+Affected files:
+- admin/batch-reservation-delete.php
+- admin/batch-reservation-view.php
+- admin/reservations.php
+- VERSION.txt
+- service-worker.js
+
+What changed:
+- Paid batch reservations can now be permanently deleted by an Administrator.
+- Deletion requires re-entering the currently signed-in Administrator password.
+- The confirmation screen shows the batch, connected reservation dates, payment transaction count, and net Sales/Collections impact.
+- Confirmed deletion removes all connected reservation dates, their payment ledger rows, batch payment scopes, and batch payment master records.
+- The related amounts no longer appear in Sales/Collections reports.
+- The whole operation is transactional and rolls back if any step fails.
+
+Database changes: None.

@@ -1,0 +1,7 @@
+TLH v1.3.8
+
+- Dashboard Business Snapshot now labels the monthly cash metric as Net Collected This Month.
+- Payment & Collections now calculates monthly and daily net collections from signed payment ledgers.
+- Refund transactions reduce collections on the actual refund date.
+- Security-deposit receipts/refunds remain excluded from ordinary collections.
+- No database migration is required.

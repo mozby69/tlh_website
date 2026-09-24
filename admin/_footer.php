@@ -7,7 +7,7 @@ $currentAdminPage = $currentAdminPage ?? basename($_SERVER['PHP_SELF']);
 $adminBottomReservationPages = [
     'reservations.php', 'reservation-view.php', 'reservation-edit.php',
     'reservation-reschedule.php', 'reservation-extend.php', 'reservation-cancel.php',
-    'reservation-print.php', 'batch-reservations.php', 'batch-reservation-view.php',
+    'reservation-delete.php', 'reservation-print.php', 'batch-reservations.php', 'batch-reservation-view.php',
     'batch-reservation-print.php'
 ];
 $adminBottomCreatePages = ['reservation-create.php', 'batch-reservation-create.php'];
@@ -19,6 +19,7 @@ $adminBottomCalendarActive = in_array($currentAdminPage, $adminBottomCalendarPag
 $adminBottomMoreActive = !$adminBottomDashboardActive && !$adminBottomReservationsActive && !$adminBottomCreateActive && !$adminBottomCalendarActive;
 ?>
 </main></div></div>
+<?php if (!is_calendar_viewer()): ?>
 <nav class="admin-bottom-nav" aria-label="Admin quick navigation">
   <a class="admin-bottom-nav-item<?= $adminBottomDashboardActive ? ' active' : '' ?>" href="index.php" data-page-swipe-index="0"<?= $adminBottomDashboardActive ? ' aria-current="page"' : '' ?>>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg>
@@ -41,6 +42,7 @@ $adminBottomMoreActive = !$adminBottomDashboardActive && !$adminBottomReservatio
     <span>More</span>
   </button>
 </nav>
+<?php endif; ?>
 <script src="../assets/js/app.js?v=<?= (int)@filemtime(__DIR__ . '/../assets/js/app.js') ?>"></script>
 <script src="../assets/js/modern.js?v=<?= (int)@filemtime(__DIR__ . '/../assets/js/modern.js') ?>"></script>
 </body></html>

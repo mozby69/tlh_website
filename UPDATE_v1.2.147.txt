@@ -1,0 +1,15 @@
+THE LEISURE HUB v1.2.147
+Event Capacity Update
+
+Changes:
+- Big Event guest range changed from 201-300 to 201-400 guests.
+- Maximum supported guest count changed from 300 to 400.
+- Updated public reservation, Admin reservation creation/editing, and Batch Reservation forms.
+- Updated server-side pricing/package validation.
+- Updated public Events and Admin Rates labels.
+- Updated live pricing and batch pricing JavaScript validation.
+
+Database update: NONE REQUIRED.
+
+Deployment:
+Copy/overwrite the included files while preserving the folder structure.

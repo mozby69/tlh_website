@@ -100,7 +100,7 @@ include __DIR__ . '/_header.php';
 
     <div class="form-group full admin-section-label">
       <h3>Big Event Rates</h3>
-      <p class="muted">Applies to reservations with 201–300 guests. The equipment bundle is included.</p>
+      <p class="muted">Applies to reservations with 201–400 guests. The equipment bundle is included.</p>
     </div>
     <div class="form-group"><label>Big Event Fan Rate / Hour</label><input type="number" min="0" step="0.01" name="pricing_big_event_fan_rate" required value="<?= e(setting('pricing_big_event_fan_rate','6000')) ?>"></div>
     <div class="form-group"><label>Big Event Aircon Rate / Hour</label><input type="number" min="0" step="0.01" name="pricing_big_event_aircon_rate" required value="<?= e(setting('pricing_big_event_aircon_rate','8000')) ?>"></div>
