@@ -1,0 +1,9 @@
+TLH v1.3.12
+
+Rental Calendar mobile parity update:
+- Replaces the cramped mobile 7-column Rental Calendar grid with a date-grouped list view matching the Booking Calendar mobile experience.
+- Adds compact previous/next month navigation with Today access.
+- Collapses Category, Rentable, and Status filters into a mobile Filters panel.
+- Keeps the full month grid and existing filters on desktop/tablet widths above 900px.
+- Rental entries remain clickable; Calendar Viewer accounts open the read-only rental details page.
+- No database migration is required.

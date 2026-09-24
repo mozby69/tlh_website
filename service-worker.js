@@ -8,7 +8,7 @@
  * when the connection is unavailable.
  */
 
-const CACHE_VERSION = 'v1.3.11';
+const CACHE_VERSION = 'v1.3.12';
 const CACHE_PREFIX = 'tlh-pwa-';
 const STATIC_CACHE = `${CACHE_PREFIX}${CACHE_VERSION}-static`;
 const PAGE_CACHE = `${CACHE_PREFIX}${CACHE_VERSION}-pages`;
