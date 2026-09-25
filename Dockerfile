@@ -23,9 +23,13 @@ RUN a2enmod rewrite
 
 COPY . /var/www/html
 
+RUN mkdir -p /var/www/html/storage/backups
+
 RUN chown -R www-data:www-data /var/www/html \
     && find /var/www/html -type d -exec chmod 755 {} \; \
-    && find /var/www/html -type f -exec chmod 644 {} \;
+    && find /var/www/html -type f -exec chmod 644 {} \; \
+    && chmod -R 775 /var/www/html/storage
+
 
 RUN printf "display_errors=Off\n\
 log_errors=On\n\
